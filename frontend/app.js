@@ -1,10 +1,10 @@
 /**
  * AI Advisory Panel — Frontend Logic
  * Vanilla JS. No frameworks, no build step.
- * Calls FastAPI backend at the same origin (served by StaticFiles mount).
+ * Chat-style UI: messages accumulate in a timeline.
  */
 
-const API_BASE = '';  // Same origin — FastAPI serves both frontend and API
+const API_BASE = '';
 
 // ─── State ─────────────────────────────────────────────────────────────────────
 
@@ -12,33 +12,40 @@ const state = {
   quoteLoaded: false,
   quoteNumber: null,
   activeQuestionId: null,
+  isThinking: false,
 };
 
 // ─── DOM Helpers ───────────────────────────────────────────────────────────────
 
 const $ = (id) => document.getElementById(id);
-
-function showEl(id)  { $(id).classList.remove('hidden'); }
-function hideEl(id)  { $(id).classList.add('hidden'); }
-function setText(id, text) { $(id).textContent = text; }
-function setHTML(id, html) { $(id).innerHTML = html; }
-
-function setLoading(btnId, spinnerId, textId, loading, defaultText) {
-  $(btnId).disabled = loading;
-  loading ? showEl(spinnerId) : hideEl(spinnerId);
-  setText(textId, loading ? 'Please wait…' : defaultText);
-  $(btnId).classList.toggle('opacity-60', loading);
-  $(btnId).classList.toggle('cursor-not-allowed', loading);
-}
+function showEl(id) { $(id).classList.remove('hidden'); }
+function hideEl(id) { $(id).classList.add('hidden'); }
+function setText(id, t) { $(id).textContent = t; }
 
 // ─── Init ──────────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
   loadQuestionList();
 
-  // Allow Enter key in quote input
+  // Enter to send in quote input
   $('quote-input').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') loadQuote();
+  });
+
+  const textarea = $('custom-input');
+
+  // Shift+Enter = newline, Enter = send
+  textarea.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      askCustom();
+    }
+  });
+
+  // Auto-resize textarea
+  textarea.addEventListener('input', () => {
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 140) + 'px';
   });
 });
 
@@ -47,12 +54,12 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadQuote() {
   const quoteNumber = $('quote-input').value.trim();
   if (!quoteNumber) {
-    showError('quote-error', 'Please enter a quote number.');
+    showQuoteError('Please enter a quote number.');
     return;
   }
 
   hideEl('quote-error');
-  setLoading('load-btn', 'load-spinner', 'load-btn-text', true, 'Load Quote');
+  setLoadingBtn(true);
 
   try {
     const res = await fetch(`${API_BASE}/api/load-quote`, {
@@ -64,146 +71,91 @@ async function loadQuote() {
     const data = await res.json();
 
     if (!res.ok) {
-      showError('quote-error', data.detail || 'Failed to load quote.');
+      showQuoteError(data.detail || 'Failed to load quote.');
       return;
     }
 
     state.quoteLoaded = true;
     state.quoteNumber = quoteNumber;
-    renderConfigSummary(data);
-    showSessionBadge(quoteNumber);
+    renderConfigStatus(data);
+    addSystemMessage(`Quote #${quoteNumber} loaded — ${data.sections_loaded.length} configuration sections available`);
 
   } catch (err) {
-    showError('quote-error', 'Network error — is the backend running?');
+    showQuoteError('Network error — is the backend running?');
   } finally {
-    setLoading('load-btn', 'load-spinner', 'load-btn-text', false, 'Load Quote');
+    setLoadingBtn(false);
   }
 }
 
-// ─── Render Config Summary ─────────────────────────────────────────────────────
+// ─── Config Status ─────────────────────────────────────────────────────────────
 
-const SECTION_LABELS = {
-  profile:        { label: 'Appliance Profile',    icon: '🖥️' },
-  compute:        { label: 'Compute (CPU/RAM)',     icon: '⚡' },
-  storage_media:  { label: 'Storage Media',         icon: '💾' },
-  storage_config: { label: 'RAID & Storage Config', icon: '🔧' },
-  network:        { label: 'Network',               icon: '🌐' },
-  veeam:          { label: 'Veeam',                 icon: '📦' },
-  environment:    { label: 'Environment',           icon: '🌡️' },
+const SECTION_INFO = {
+  profile:        'Profile',
+  compute:        'Compute',
+  storage_media:  'Storage',
+  storage_config: 'RAID',
+  network:        'Network',
+  veeam:          'Veeam',
+  environment:    'Env',
 };
 
-const ALL_SECTIONS = Object.keys(SECTION_LABELS);
+function renderConfigStatus(data) {
+  $('config-quote-label').textContent = `Quote #${data.quote_number}`;
 
-function renderConfigSummary(data) {
   const loaded = new Set(data.sections_loaded || []);
-
-  $('quote-number-badge').textContent = `Quote #${data.quote_number}`;
-
-  const grid = $('sections-grid');
-  grid.innerHTML = ALL_SECTIONS.map(key => {
-    const { label, icon } = SECTION_LABELS[key];
-    const isLoaded = loaded.has(key);
-    return `
-      <div class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
-        isLoaded
-          ? 'bg-green-50 border border-green-200 text-green-800'
-          : 'bg-slate-50 border border-slate-200 text-slate-400'
-      }">
-        <span>${icon}</span>
-        <span class="font-medium truncate">${label}</span>
-        <span class="ml-auto">${isLoaded ? '✓' : '—'}</span>
-      </div>
-    `;
+  $('config-chips').innerHTML = Object.entries(SECTION_INFO).map(([key, label]) => {
+    const on = loaded.has(key);
+    return `<span class="config-chip ${on ? 'config-chip-on' : 'config-chip-off'}">${label}</span>`;
   }).join('');
 
-  showEl('config-summary-section');
+  showEl('config-status');
 }
 
-// ─── Session Badge ─────────────────────────────────────────────────────────────
-
-function showSessionBadge(quoteNumber) {
-  setText('session-quote-label', `Quote #${quoteNumber}`);
-  $('session-badge').classList.remove('hidden');
-  $('session-badge').classList.add('flex');
-}
-
-function hideSessionBadge() {
-  $('session-badge').classList.add('hidden');
-  $('session-badge').classList.remove('flex');
-}
-
-// ─── Clear Session ─────────────────────────────────────────────────────────────
-
-async function clearSession() {
-  try {
-    await fetch(`${API_BASE}/api/clear`, { method: 'POST' });
-  } catch (_) { /* best effort */ }
-
-  state.quoteLoaded = false;
-  state.quoteNumber = null;
-  state.activeQuestionId = null;
-
-  $('quote-input').value = '';
-  hideEl('config-summary-section');
-  hideEl('response-section');
-  hideEl('quote-error');
-  hideSessionBadge();
-
-  // Deactivate all question buttons
-  document.querySelectorAll('.q-btn').forEach(btn => {
-    btn.classList.remove('q-btn-active');
-    btn.classList.add('q-btn-inactive');
-  });
-}
-
-// ─── Load Question List ────────────────────────────────────────────────────────
+// ─── Question List ─────────────────────────────────────────────────────────────
 
 async function loadQuestionList() {
   try {
     const res = await fetch(`${API_BASE}/api/questions`);
     const data = await res.json();
-    renderQuestionGrid(data.questions);
-  } catch (err) {
-    setHTML('questions-grid', '<div class="col-span-full text-sm text-red-500">Failed to load questions. Is the backend running?</div>');
+    renderQuestionList(data.questions);
+  } catch {
+    $('questions-list').innerHTML = '<div class="text-gray-600 text-xs px-2 py-2">Could not load questions.</div>';
   }
 }
 
-function renderQuestionGrid(questions) {
-  const grid = $('questions-grid');
-  grid.innerHTML = questions.map(q => `
+function renderQuestionList(questions) {
+  $('questions-list').innerHTML = questions.map(q => `
     <button
-      class="q-btn q-btn-inactive text-left px-4 py-3 rounded-lg border text-sm transition-all"
+      class="q-btn w-full text-left px-2 py-2 rounded-lg transition-colors"
       data-id="${q.id}"
       onclick="askPreselected(${q.id}, this)"
     >
-      <span class="font-semibold text-brand-700 mr-2">Q${q.id}.</span>
-      <span>${q.text}</span>
+      <div class="flex items-start gap-2">
+        <span class="q-num flex-shrink-0 w-6 h-5 rounded text-xs font-bold flex items-center justify-center mt-0.5">${q.id}</span>
+        <span class="q-text text-xs leading-snug line-clamp-2">${escapeHtml(q.text)}</span>
+      </div>
     </button>
   `).join('');
 }
 
-// ─── Ask Pre-selected Question ─────────────────────────────────────────────────
+// ─── Ask Pre-selected ──────────────────────────────────────────────────────────
 
 async function askPreselected(questionId, buttonEl) {
   if (!state.quoteLoaded) {
-    scrollToQuoteInput();
-    showError('quote-error', 'Load a quote first before asking questions.');
+    shakeQuoteInput();
+    showQuoteError('Load a quote first.');
     return;
   }
+  if (state.isThinking) return;
 
-  // Highlight active button
-  document.querySelectorAll('.q-btn').forEach(btn => {
-    btn.classList.remove('q-btn-active');
-    btn.classList.add('q-btn-inactive');
-  });
-  buttonEl.classList.remove('q-btn-inactive');
+  // Activate sidebar button
+  document.querySelectorAll('.q-btn').forEach(btn => btn.classList.remove('q-btn-active'));
   buttonEl.classList.add('q-btn-active');
-
   state.activeQuestionId = questionId;
 
-  // Get question text from button
-  const questionText = buttonEl.querySelector('span:last-child').textContent;
-  showResponseLoading(questionText, 'A');
+  const questionText = buttonEl.querySelector('.q-text').textContent.trim();
+  addUserMessage(questionText);
+  const thinkingId = addThinkingMessage();
 
   try {
     const res = await fetch(`${API_BASE}/api/ask`, {
@@ -213,43 +165,41 @@ async function askPreselected(questionId, buttonEl) {
     });
 
     const data = await res.json();
+    removeThinkingMessage(thinkingId);
 
     if (!res.ok) {
-      showResponseError(data.detail || 'Failed to get a response.');
+      addErrorMessage(data.detail || 'Failed to get a response.');
       return;
     }
 
-    renderResponse(data);
+    addAssistantMessage(data);
 
-  } catch (err) {
-    showResponseError('Network error — is the backend running?');
+  } catch {
+    removeThinkingMessage(thinkingId);
+    addErrorMessage('Network error — is the backend running?');
   }
 }
 
-// ─── Ask Custom Question ────────────────────────────────────────────────────────
+// ─── Ask Custom ───────────────────────────────────────────────────────────────
 
 async function askCustom() {
   const question = $('custom-input').value.trim();
-
-  if (!question) {
-    $('custom-input').focus();
-    return;
-  }
+  if (!question) return;
 
   if (!state.quoteLoaded) {
-    scrollToQuoteInput();
-    showError('quote-error', 'Load a quote first before asking questions.');
+    shakeQuoteInput();
+    showQuoteError('Load a quote first.');
     return;
   }
+  if (state.isThinking) return;
 
-  // Deactivate pre-selected buttons
-  document.querySelectorAll('.q-btn').forEach(btn => {
-    btn.classList.remove('q-btn-active');
-    btn.classList.add('q-btn-inactive');
-  });
+  document.querySelectorAll('.q-btn').forEach(btn => btn.classList.remove('q-btn-active'));
+  $('custom-input').value = '';
+  $('custom-input').style.height = 'auto';
 
-  setLoading('custom-btn', 'custom-spinner', 'custom-btn-text', true, 'Ask Custom Question');
-  showResponseLoading(question, 'B');
+  addUserMessage(question);
+  const thinkingId = addThinkingMessage();
+  setCustomBtnLoading(true);
 
   try {
     const res = await fetch(`${API_BASE}/api/ask`, {
@@ -259,122 +209,206 @@ async function askCustom() {
     });
 
     const data = await res.json();
+    removeThinkingMessage(thinkingId);
 
     if (!res.ok) {
-      showResponseError(data.detail || 'Failed to get a response.');
+      addErrorMessage(data.detail || 'Failed to get a response.');
       return;
     }
 
-    renderResponse(data);
+    addAssistantMessage(data);
 
-  } catch (err) {
-    showResponseError('Network error — is the backend running?');
+  } catch {
+    removeThinkingMessage(thinkingId);
+    addErrorMessage('Network error — is the backend running?');
   } finally {
-    setLoading('custom-btn', 'custom-spinner', 'custom-btn-text', false, 'Ask Custom Question');
+    setCustomBtnLoading(false);
   }
 }
 
-// ─── Response Rendering ────────────────────────────────────────────────────────
+// ─── Message Builders ──────────────────────────────────────────────────────────
 
-function showResponseLoading(questionText, category) {
-  showEl('response-section');
-  hideEl('response-error');
-  setHTML('response-body', '');
-  setHTML('calibration-warnings', '');
-  hideEl('calibration-warnings');
-
-  setCategoryBadge(category);
-  setText('response-question', questionText);
-  showEl('response-loading-badge');
-
-  $('response-section').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
-function renderResponse(data) {
-  hideEl('response-loading-badge');
-  setCategoryBadge(data.category);
-  setText('response-question', data.question);
-
-  // Calibration warnings
-  const warnings = data.calibration_warnings || [];
-  if (warnings.length > 0) {
-    const warningsHTML = warnings.map(w => `
-      <div class="flex gap-2 text-sm bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-4 py-2.5">
-        <span class="shrink-0">⚠️</span>
-        <span>${escapeHtml(w)}</span>
+function addUserMessage(text) {
+  showChat();
+  appendToChat(`
+    <div class="flex justify-end message-in">
+      <div class="max-w-[75%]">
+        <div class="bg-brand-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm leading-relaxed shadow-sm">
+          ${escapeHtml(text)}
+        </div>
+        <div class="text-xs text-gray-400 mt-1.5 text-right pr-1">${formatTime()}</div>
       </div>
-    `).join('');
-    setHTML('calibration-warnings', warningsHTML);
-    showEl('calibration-warnings');
-  }
-
-  // Format response text — convert markdown-like sections to styled HTML
-  setHTML('response-body', formatResponse(data.response));
+    </div>
+  `);
 }
 
-function showResponseError(message) {
-  hideEl('response-loading-badge');
-  setHTML('response-body', '');
-  hideEl('calibration-warnings');
-  setText('response-error', message);
-  showEl('response-error');
+function addThinkingMessage() {
+  showChat();
+  state.isThinking = true;
+  const id = `thinking-${Date.now()}`;
+  appendToChat(`
+    <div class="flex gap-3 message-in" id="${id}">
+      <div class="ai-avatar flex-shrink-0">AI</div>
+      <div class="mt-1">
+        <div class="text-xs font-semibold text-gray-400 mb-2">AI Advisory</div>
+        <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-5 py-4 shadow-sm inline-block">
+          <div class="thinking-dots"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+    </div>
+  `, id);
+  return id;
 }
 
-function setCategoryBadge(category) {
-  const badge = $('response-category-badge');
-  if (category === 'A') {
-    badge.textContent = 'Category A — High Confidence';
-    badge.className = 'text-xs font-semibold px-2.5 py-0.5 rounded-full bg-green-100 text-green-800 border border-green-200';
-  } else {
-    badge.textContent = 'Category B — Medium Confidence';
-    badge.className = 'text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200';
-  }
+function removeThinkingMessage(id) {
+  state.isThinking = false;
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function addAssistantMessage(data) {
+  showChat();
+  const isA = data.category === 'A';
+  const time = formatTime();
+
+  const warningsHTML = (data.calibration_warnings || []).map(w => `
+    <div class="flex gap-2 text-xs bg-amber-50 border border-amber-100 text-amber-700 rounded-xl px-3 py-2.5 mb-3 leading-relaxed">
+      <svg class="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+      </svg>
+      <span>${escapeHtml(w)}</span>
+    </div>
+  `).join('');
+
+  appendToChat(`
+    <div class="flex gap-3 message-in">
+      <div class="ai-avatar flex-shrink-0">AI</div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-2.5">
+          <span class="text-xs font-semibold text-gray-500">AI Advisory</span>
+          <span class="cat-badge ${isA ? 'cat-a' : 'cat-b'}">
+            ${isA ? 'Category A · High Confidence' : 'Category B · Medium Confidence'}
+          </span>
+          <span class="text-xs text-gray-400 ml-auto">${time}</span>
+        </div>
+        ${warningsHTML}
+        <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-5 py-4 shadow-sm prose-response">
+          ${formatResponse(data.response)}
+        </div>
+      </div>
+    </div>
+  `);
+}
+
+function addSystemMessage(text) {
+  showChat();
+  appendToChat(`
+    <div class="flex justify-center message-in">
+      <div class="text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-4 py-1.5">
+        ${escapeHtml(text)}
+      </div>
+    </div>
+  `);
+}
+
+function addErrorMessage(text) {
+  showChat();
+  appendToChat(`
+    <div class="flex gap-3 message-in">
+      <div class="ai-avatar ai-avatar-err flex-shrink-0">!</div>
+      <div class="bg-red-50 border border-red-200 text-red-700 rounded-2xl rounded-tl-sm px-4 py-3 text-sm leading-relaxed shadow-sm">
+        ${escapeHtml(text)}
+      </div>
+    </div>
+  `);
+}
+
+// ─── Chat Helpers ──────────────────────────────────────────────────────────────
+
+function appendToChat(html, id = null) {
+  const container = $('messages-container');
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = html.trim();
+  const el = wrapper.firstElementChild;
+  if (id) el.id = id;
+  container.appendChild(el);
+  scrollToBottom();
+}
+
+function showChat() {
+  hideEl('empty-state');
+  showEl('messages-container');
+}
+
+function scrollToBottom() {
+  requestAnimationFrame(() => {
+    const chat = $('chat-messages');
+    chat.scrollTop = chat.scrollHeight;
+  });
+}
+
+// ─── Clear Session ─────────────────────────────────────────────────────────────
+
+async function clearSession() {
+  try { await fetch(`${API_BASE}/api/clear`, { method: 'POST' }); } catch (_) {}
+
+  state.quoteLoaded = false;
+  state.quoteNumber = null;
+  state.activeQuestionId = null;
+  state.isThinking = false;
+
+  $('quote-input').value = '';
+  hideEl('config-status');
+  hideEl('quote-error');
+
+  document.querySelectorAll('.q-btn').forEach(btn => btn.classList.remove('q-btn-active'));
+
+  $('messages-container').innerHTML = '';
+  hideEl('messages-container');
+  showEl('empty-state');
 }
 
 // ─── Response Formatter ────────────────────────────────────────────────────────
-// Converts the plain-text structured response from Claude into readable HTML.
 
 function formatResponse(text) {
   if (!text) return '';
 
-  // Escape HTML first
   let html = escapeHtml(text);
 
-  // Section headers: lines in ALL CAPS or starting with ## → styled header
-  html = html.replace(/^(#{1,3}\s+.+)$/gm, (match, heading) => {
-    const clean = heading.replace(/^#+\s+/, '');
-    return `<h4 class="response-heading">${clean}</h4>`;
-  });
+  // Markdown headers
+  html = html.replace(/^#{1,3}\s+(.+)$/gm, (_, h) =>
+    `<h4 class="response-heading">${h}</h4>`
+  );
 
-  // Bold: **text**
+  // ALL CAPS section headers (ESTIMATE, CALCULATION, etc.)
+  html = html.replace(/^([A-Z][A-Z\s&\/]{3,}):?\s*$/gm, (_, h) =>
+    `<h4 class="response-heading">${h}</h4>`
+  );
+
+  // Bold **text**
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 
-  // Bullet points: lines starting with - or •
+  // Bullet lists
   html = html.replace(/^[-•]\s+(.+)$/gm, '<li>$1</li>');
-  html = html.replace(/(<li>.*<\/li>\n?)+/gs, (match) => `<ul class="response-list">${match}</ul>`);
+  html = html.replace(/(<li>.*?<\/li>\n?)+/gs, m =>
+    `<ul class="response-list">${m}</ul>`
+  );
 
-  // Numbered lists: lines starting with 1. 2. etc
+  // Numbered lists
   html = html.replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>');
 
-  // CONFIDENCE LEVEL line — highlight
+  // Confidence level highlight
   html = html.replace(
-    /(CONFIDENCE(?: LEVEL)?:?\s*)(High|Medium|Low)/gi,
+    /(CONFIDENCE(?:\s+LEVEL)?:?\s*)(High|Medium|Low)/gi,
     (_, prefix, level) => {
-      const colors = {
-        high:   'confidence-high',
-        medium: 'confidence-medium',
-        low:    'confidence-low',
-      };
-      const cls = colors[level.toLowerCase()] || '';
-      return `<span class="confidence-label ${cls}">${prefix}${level}</span>`;
+      const cls = { high: 'conf-high', medium: 'conf-medium', low: 'conf-low' }[level.toLowerCase()] || '';
+      return `<span class="conf-badge ${cls}">${prefix}${level}</span>`;
     }
   );
 
-  // Paragraph breaks: double newlines
+  // Paragraph breaks
   html = html.replace(/\n\n+/g, '</p><p class="response-para">');
   html = `<p class="response-para">${html}</p>`;
-
-  // Single newlines to <br> inside paragraphs
   html = html.replace(/(?<!>)\n(?!<)/g, '<br>');
 
   return html;
@@ -383,19 +417,37 @@ function formatResponse(text) {
 // ─── Utilities ─────────────────────────────────────────────────────────────────
 
 function escapeHtml(text) {
-  return text
+  return String(text)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
 
-function showError(elementId, message) {
-  setText(elementId, message);
-  showEl(elementId);
+function formatTime() {
+  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function scrollToQuoteInput() {
-  $('quote-input').scrollIntoView({ behavior: 'smooth', block: 'center' });
-  $('quote-input').focus();
+function showQuoteError(msg) {
+  $('quote-error').textContent = msg;
+  showEl('quote-error');
+  setTimeout(() => hideEl('quote-error'), 5000);
+}
+
+function setLoadingBtn(loading) {
+  $('load-btn').disabled = loading;
+  setText('load-btn-text', loading ? '…' : 'Load');
+  loading ? showEl('load-spinner') : hideEl('load-spinner');
+}
+
+function setCustomBtnLoading(loading) {
+  $('custom-btn').disabled = loading;
+  if (loading) { showEl('custom-spinner'); hideEl('send-icon'); }
+  else         { hideEl('custom-spinner'); showEl('send-icon'); }
+}
+
+function shakeQuoteInput() {
+  const el = $('quote-input');
+  el.classList.add('shake');
+  setTimeout(() => el.classList.remove('shake'), 500);
 }

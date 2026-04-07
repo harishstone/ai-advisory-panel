@@ -138,9 +138,10 @@
     "database_data":     { "typical": 1.5, "best_case": 3.0, "worst_case": 1.1 },
     "media_files":       { "typical": 1.05, "best_case": 1.1, "worst_case": 1.0 }
   },
-  "snsd_s3_ssd_overhead": {
-    "description": "SNSD S3 volume requires additional SSD metadata overhead",
-    "overhead_multiplier": 1.15,
-    "note": "SSD sizing = desired_usable_tb * 1.15 to account for metadata and index overhead"
+  "snsd_s3_ssd_metadata": {
+    "description": "SNSD S3 volume uses SSD/NVMe as a metadata and index tier alongside HDD data storage",
+    "ssd_per_hdd_tb_with_veeam_compression_gib": 10,
+    "ssd_per_hdd_tb_without_compression_gib": 5,
+    "note": "From StoneFly release notes: 10 GiB NVMe/SSD per 1 TiB HDD with Veeam compression (recommended); 5 GiB without compression. This is the metadata index tier, not a capacity overhead multiplier."
   }
 }

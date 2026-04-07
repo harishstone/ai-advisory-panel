@@ -21,14 +21,21 @@ prompt_additions: >
   The user wants to know how much RAM and fast storage is required for the
   deduplication index for a given volume size.
 
-  StoneFly dedup index sizing rule:
-  - RAM: 1 GB of RAM per 1 TB of deduplicated data
-  - Fast storage (SSD/NVMe): for index overflow/persistence, allocate 10 GB SSD per 1 TB
+  StoneFly dedup index sizing rule (configuration-dependent):
+  RAM and index storage requirements depend on: dedup pool size, block size, dedup ratio,
+  number of volumes, and average volume size. There is no single fixed GB/TB ratio.
 
-  Calculation:
-    deduplicated_data_tb = total_usable_capacity_tb * dedup_ratio (or 1.0 if dedup disabled)
-    ram_required_gb = deduplicated_data_tb * 1 (GB/TB)
-    ssd_index_required_gb = deduplicated_data_tb * 10 (GB/TB)
+  Reference values from StoneFly dedup calculator (4KB block size, 4:1 ratio, 1 pool):
+  - RAM: approximately 5 GB per 1 TB dedup pool (e.g., 1 TB pool → ~5 GB RAM)
+  - Index storage (SSD/NVMe): approximately 18 GB per 1 TB dedup pool
+
+  Always state that these are estimates for 4KB block size / 4:1 ratio configuration.
+  Actual requirements may be higher or lower depending on block size and ratio.
+
+  Calculation (use as estimate, not guarantee):
+    dedup_pool_tb = total_usable_capacity_tb (or user-specified pool size)
+    ram_required_gb ≈ dedup_pool_tb * 5  (GB/TB, for 4KB block, 4:1 ratio)
+    ssd_index_required_gb ≈ dedup_pool_tb * 18  (GB/TB, for 4KB block, 4:1 ratio)
 
   Check against available RAM (compute.total_ram_gb):
   - If ram_required_gb > total_ram_gb * 0.25 (25% of total RAM),
@@ -36,9 +43,10 @@ prompt_additions: >
   - Recommend reserving at least 50% of RAM for OS and workload VMs
 
   Provide:
-  1. Volume size input
-  2. RAM required for dedup index (GB)
-  3. SSD fast storage required for index persistence (GB)
-  4. RAM availability check against provided compute config
-  5. Recommendation: if RAM is insufficient, consider reducing dedup scope or
+  1. Dedup pool size input
+  2. Estimated RAM required for dedup index (~5 GB/TB, 4KB/4:1 config)
+  3. Estimated SSD fast storage required for index persistence (~18 GB/TB)
+  4. Clearly note: actual values depend on block size and ratio — use StoneFly dedup calculator for exact sizing
+  5. RAM availability check against provided compute config
+  6. Recommendation: if RAM is insufficient, consider reducing dedup pool size or
      adding RAM before enabling inline dedup

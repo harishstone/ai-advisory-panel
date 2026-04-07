@@ -1,0 +1,55 @@
+question_id: 13
+question_text: >
+  Resource Requirement: How much resources will be required to run concurrent
+  Veeam Backup, Backup Copy Jobs along with Replication Jobs?
+
+category: A
+required_sections:
+  - veeam
+  - compute
+  - storage_media
+
+optional_sections:
+  - network
+
+context_fields_used:
+  - veeam.concurrent_backup_jobs
+  - veeam.backup_copy_enabled
+  - veeam.transport_mode
+  - veeam.backup_encryption
+  - compute.total_physical_cores
+  - compute.total_logical_processors
+  - compute.total_ram_gb
+  - compute.cpu_reservation_pct
+  - storage_media.primary_disk_type
+  - storage_media.primary_disk_count
+  - network.nic_speed
+  - network.active_data_ports
+  - network.bonding_mode
+
+prompt_additions: >
+  The user wants to know if their hardware has enough CPU, RAM, and I/O to run
+  the specified number of concurrent Veeam jobs.
+
+  Resource consumption rules per Veeam job stream:
+  - CPU: ~1 physical core per 150 MB/s of backup throughput (or 1 core per job minimum)
+  - RAM: 4-8 GB per concurrent job (8 GB recommended for large VMs)
+  - I/O: each job consumes read I/O from source + write I/O to repository simultaneously
+  - Network: each job stream saturates approximately one proxy NIC link
+
+  Analysis steps:
+  1. Total concurrent streams = backup_jobs + backup_copy_jobs + replication_jobs
+  2. CPU required = total_streams * (throughput_per_stream / 150)
+     — compare to available cores after cpu_reservation_pct
+  3. RAM required = total_streams * 8 GB (conservative)
+     — compare to total_ram_gb minus ram reserved for storage controller
+  4. I/O bandwidth required = total_streams * per_stream_throughput
+     — compare to storage throughput ceiling and NIC bandwidth ceiling
+  5. Network required = total_streams * per_stream_throughput
+     — compare to NIC bandwidth
+
+  Show for each resource (CPU, RAM, I/O, Network):
+  1. Required vs Available
+  2. Pass / Warn / Fail assessment
+  3. Bottleneck identification: which resource runs out first?
+  4. Recommendation: how many concurrent jobs can the hardware actually support?

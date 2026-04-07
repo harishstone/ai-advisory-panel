@@ -1,0 +1,49 @@
+# Sensitive / private docs
+context.md
+DEVELOPMENT_PLAN.md
+
+# Environment variables
+.env
+.env.example
+.env.local
+.env.*.local
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+
+# Test cache
+.pytest_cache/
+.coverage
+htmlcov/
+*.xml
+
+# Build / packaging
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# IDE / OS
+.vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Claude Desktop config (contains API keys)
+claude_desktop_config.json
+

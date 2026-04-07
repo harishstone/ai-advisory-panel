@@ -1,0 +1,51 @@
+{
+  "profile": {
+    "appliance_type": "backup_dr",
+    "primary_workloads": ["veeam_backup_jobs", "veeam_backup_copy_jobs", "veeam_restore_operations"],
+    "total_usable_capacity_tb": 100,
+    "concurrent_workloads": 20,
+    "avg_dataset_size_gb": 500
+  },
+  "storage_media": {
+    "primary_disk_type": "sas_hdd",
+    "primary_disk_capacity_tb": 8,
+    "primary_disk_count": 16,
+    "primary_disk_rpm": 7200,
+    "fast_tier_type": "ssd_sata_sas",
+    "fast_tier_capacity_gb": 960,
+    "controller_cache_gb": 4,
+    "cache_protection": "battery"
+  },
+  "storage_config": {
+    "raid_level": "raid60",
+    "stripe_size_kb": 128,
+    "write_back_policy": "write_back",
+    "hot_spare": "global",
+    "global_spares_count": 2,
+    "deduplication_enabled": false,
+    "compression_enabled": false
+  },
+  "network": {
+    "nic_speed": "10gbe",
+    "active_data_ports": 4,
+    "bonding_mode": "lacp_802_3ad",
+    "lacp_active_links": 4,
+    "jumbo_frames_mtu9000": true,
+    "dedicated_storage_network": true
+  },
+  "veeam": {
+    "veeam_version": "12.1",
+    "proxy_location": "on_appliance",
+    "transport_mode": "direct_storage",
+    "repository_type": "performance_optimized",
+    "per_vm_backup_files": true,
+    "backup_encryption": false,
+    "daily_change_rate_pct": 5,
+    "backup_window_hours": 8,
+    "concurrent_backup_jobs": 4,
+    "synthetic_full_frequency": "weekly",
+    "backup_copy_enabled": true,
+    "restore_type": "image_level",
+    "concurrent_restores": 2
+  }
+}

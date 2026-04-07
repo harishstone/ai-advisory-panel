@@ -1,0 +1,46 @@
+question_id: 14
+question_text: >
+  Cache Storage Size: How much size will be required for FC index for a N TB
+  backing resource?
+
+category: A
+required_sections:
+  - storage_config
+  - storage_media
+
+optional_sections:
+  - profile
+
+context_fields_used:
+  - storage_config.deduplication_enabled
+  - storage_media.primary_disk_capacity_tb
+  - storage_media.primary_disk_count
+  - storage_config.raid_level
+  - profile.total_usable_capacity_tb
+
+prompt_additions: >
+  The user wants to know how much Flash Cache (FC) SSD storage is needed for
+  the FC index for a given backing storage resource size.
+
+  Flash Cache sizing rule (StoneFly default):
+  - 10 GB of SSD cache per 1 TB of backing HDD storage is the standard starting point
+  - For read-heavy workloads (>70% reads): 15 GB per TB recommended
+  - For write-heavy workloads (>70% writes): 8 GB per TB (cache less effective for writes)
+  - For mixed workloads: 10 GB per TB
+
+  Calculation:
+    backing_storage_tb = usable capacity after RAID on HDD tier
+    fc_index_ssd_gb = backing_storage_tb * 10 (for mixed workloads)
+
+  Working set consideration:
+  - Flash Cache is most effective when the working set fits in cache
+  - If the working set is larger than cache, effectiveness drops significantly
+  - Rule of thumb: cache should cover at least the hot 20% of the data set
+    (Pareto principle — 20% of data accounts for 80% of I/O)
+
+  Provide:
+  1. Backing storage usable capacity (TB)
+  2. Recommended FC SSD size (GB/TB)
+  3. Working set estimate and whether the cache covers it
+  4. Access pattern impact: random vs sequential — FC helps random reads most
+  5. Recommendation: NVMe preferred over SATA SSD for FC tier due to latency

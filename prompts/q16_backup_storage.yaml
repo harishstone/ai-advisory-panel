@@ -1,0 +1,56 @@
+question_id: 16
+question_text: >
+  Backup Storage Requirement: How much usable space would be required to backup
+  N number of VMs occupying N TB of space across the VMs?
+
+category: A
+required_sections:
+  - veeam
+  - profile
+
+optional_sections:
+  - storage_config
+
+context_fields_used:
+  - veeam.daily_change_rate_pct
+  - veeam.backup_copy_enabled
+  - veeam.backup_copy_target
+  - veeam.synthetic_full_frequency
+  - veeam.per_vm_backup_files
+  - veeam.backup_encryption
+  - storage_config.deduplication_enabled
+  - storage_config.dedup_ratio
+  - storage_config.compression_enabled
+  - profile.total_usable_capacity_tb
+  - profile.concurrent_workloads
+  - profile.avg_dataset_size_gb
+
+prompt_additions: >
+  The user wants to calculate how much backup storage is needed for their VM environment.
+
+  Core formula:
+    full_backup_tb = source_data_tb
+    incremental_per_day_tb = source_data_tb * (daily_change_rate_pct / 100)
+    total_before_efficiency = full_backup_tb + (incremental_per_day_tb * retention_days)
+
+  Retention periods to show (ask user or default to common values):
+  - 7 days (short-term)
+  - 14 days (two-week)
+  - 30 days (monthly)
+
+  Apply storage efficiency if dedup/compression enabled:
+    effective_storage_needed = total_before_efficiency / dedup_ratio
+
+  Add overhead:
+  - Veeam metadata overhead: +5%
+  - Synthetic full storage overhead (if weekly): additional full backup worth of space per week
+  - Backup Copy Job target: if enabled, multiply storage by 2 (or factor in target capacity separately)
+
+  Show:
+  1. Full backup size (= source data)
+  2. Incremental chain size per day
+  3. Total storage needed for 7 / 14 / 30 day retention (before efficiency)
+  4. Total storage needed after dedup/compression (if enabled)
+  5. Final recommendation with 20% buffer for metadata and growth
+  6. Warning: if backup encryption is enabled, dedup will be ineffective — disable
+     dedup on encrypted backup repositories or use Veeam's built-in dedupe instead

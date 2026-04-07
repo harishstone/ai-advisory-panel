@@ -1,0 +1,83 @@
+{
+  "profile": {
+    "appliance_type": "hyperconverged_compute",
+    "protocols": ["iscsi", "nas_nfs", "s3"],
+    "primary_workloads": ["veeam_backup_jobs", "general_vm_workloads", "block_storage_iscsi"],
+    "total_usable_capacity_tb": 200,
+    "avg_dataset_size_gb": 200,
+    "concurrent_workloads": 50,
+    "annual_growth_rate_pct": 20
+  },
+  "compute": {
+    "cpu_model": "Intel Xeon Silver 4314",
+    "total_physical_cores": 32,
+    "total_logical_processors": 64,
+    "cpu_reservation_pct": 15,
+    "total_ram_gb": 256,
+    "ram_storage_controller_gb": 32,
+    "ram_vms_gb": 224
+  },
+  "storage_media": {
+    "primary_disk_type": "sas_hdd",
+    "primary_disk_capacity_tb": 8,
+    "primary_disk_count": 24,
+    "primary_disk_rpm": 7200,
+    "fast_tier_type": "nvme_ssd",
+    "fast_tier_capacity_gb": 3840,
+    "controller_model": "Broadcom MegaRAID 9560",
+    "controller_cache_gb": 8,
+    "cache_protection": "capacitor",
+    "max_stripe_size_kb": 256
+  },
+  "storage_config": {
+    "raid_level": "raid60",
+    "raid_groups_count": 2,
+    "stripe_size_kb": 64,
+    "hot_spare": "global",
+    "global_spares_count": 2,
+    "write_back_policy": "write_back",
+    "thin_provisioning": true,
+    "deduplication_enabled": true,
+    "dedup_ratio": 2.5,
+    "compression_enabled": true,
+    "compression_algorithm": "lz4"
+  },
+  "network": {
+    "nic_speed": "25gbe",
+    "active_data_ports": 4,
+    "bonding_mode": "lacp_802_3ad",
+    "lacp_active_links": 4,
+    "switch_model": "Cisco Nexus 93180YC-FX",
+    "jumbo_frames_mtu9000": true,
+    "dedicated_storage_network": true,
+    "expected_latency_ms": 0.5,
+    "iscsi_multipathing": true,
+    "nfs_version": "v4.1",
+    "s3_object_size_distribution": "10-100MB",
+    "s3_concurrent_ops": 32
+  },
+  "veeam": {
+    "veeam_version": "12.1",
+    "proxy_location": "on_appliance",
+    "transport_mode": "direct_storage",
+    "repository_type": "performance_optimized",
+    "per_vm_backup_files": true,
+    "backup_encryption": false,
+    "daily_change_rate_pct": 8,
+    "backup_window_hours": 6,
+    "concurrent_backup_jobs": 5,
+    "synthetic_full_frequency": "weekly",
+    "backup_copy_enabled": true,
+    "restore_type": "image_level",
+    "restore_target": "original",
+    "concurrent_restores": 2
+  },
+  "environment": {
+    "ambient_temp_celsius": 22,
+    "power_redundancy": "dual_psu_ups",
+    "uptime_requirement_pct": 99.9,
+    "use_stonefly_scvm": true,
+    "external_monitoring": true,
+    "alert_threshold_pct": 20
+  }
+}

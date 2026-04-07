@@ -1,0 +1,53 @@
+question_id: 6
+question_text: >
+  What Rebuild Time can I expect when I replace a Failed Hard Disk and the
+  Hot Spare kicks off the Rebuild? Please factor in Active I/O and other
+  relevant factors.
+
+category: A
+required_sections:
+  - storage_media
+  - storage_config
+
+optional_sections:
+  - profile
+
+context_fields_used:
+  - storage_media.primary_disk_type
+  - storage_media.primary_disk_capacity_tb
+  - storage_media.primary_disk_count
+  - storage_media.primary_disk_rpm
+  - storage_config.raid_level
+  - storage_config.hot_spare
+
+prompt_additions: >
+  The user wants to know how long a RAID rebuild will take after a disk failure
+  with an active hot spare.
+
+  Use rebuild_times from hardware_baselines as the base rate per TB.
+
+  Base rebuild time formula:
+    base_hours = drive_capacity_tb * rebuild_time_per_tb[disk_type]
+
+  With active I/O (production workloads running during rebuild):
+    rebuild_hours = base_hours * active_io_overhead_multiplier (1.4)
+
+  Additional factors to address:
+  1. RAID level impact:
+     - RAID5: reads ALL remaining drives to reconstruct — rebuild time scales with array size
+     - RAID6: can survive a second failure during rebuild — slightly longer rebuild due to
+       dual parity recalculation
+     - RAID10: rebuilds from mirror pair only — fastest rebuild regardless of array size
+  2. URE (Unrecoverable Read Error) risk:
+     - For RAID5 with large drives (>4TB), calculate the probability of a URE during rebuild
+     - Formula note: URE rate for enterprise SAS is ~1 in 10^15 bits read
+     - For a 12-drive 4TB array RAID5, reading ~44TB during rebuild — mention this risk
+  3. Hot spare type: dedicated per-group vs global spare — both same rebuild time, but global
+     spare may be shared across multiple RAID groups
+
+  Provide:
+  1. Estimated rebuild time without active I/O (hours)
+  2. Estimated rebuild time with active I/O (hours)
+  3. RAID level specific notes
+  4. URE risk assessment for large HDD arrays
+  5. Recommendation: monitor rebuild progress and reduce I/O load if possible during rebuild

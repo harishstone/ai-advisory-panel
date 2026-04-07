@@ -1,0 +1,53 @@
+question_id: 3
+question_text: >
+  What Backup Speed will I get on my Veeam Backups and Backup Copy Jobs?
+
+category: A
+required_sections:
+  - storage_media
+  - veeam
+  - network
+
+optional_sections:
+  - storage_config
+
+context_fields_used:
+  - storage_media.primary_disk_type
+  - storage_media.primary_disk_count
+  - storage_media.controller_cache_gb
+  - storage_config.raid_level
+  - storage_config.write_back_policy
+  - veeam.concurrent_backup_jobs
+  - veeam.transport_mode
+  - veeam.repository_type
+  - veeam.backup_encryption
+  - veeam.backup_copy_enabled
+  - veeam.backup_copy_target
+  - veeam.daily_change_rate_pct
+  - veeam.backup_window_hours
+  - network.nic_speed
+  - network.bonding_mode
+
+prompt_additions: >
+  The user wants to know the backup speed for Veeam Backup Jobs and Backup Copy Jobs.
+
+  Use veeam_baselines.backup_speed_per_stream_mbps as the per-stream starting point,
+  matched to source disk type and repository disk type.
+
+  Then apply:
+  - Concurrent jobs scaling factor from calibration_factors.veeam.concurrent_jobs_scaling
+  - Encryption overhead if enabled (~10%)
+  - Dedup/compression overhead if capacity-optimized repository (~8%)
+  - Write-through penalty if applicable (~40% write performance reduction)
+  - NIC bandwidth ceiling check
+
+  For Backup Copy Jobs: these run simultaneously with backup jobs and compete for the
+  same network bandwidth and repository I/O. Factor in the additional contention.
+
+  Provide:
+  1. Single backup job throughput: MB/s
+  2. Total throughput with N concurrent jobs: MB/s aggregate and per-job
+  3. Backup Copy Job throughput (if enabled)
+  4. Estimated backup window: given the source data size and daily change rate,
+     calculate if the backup will complete within the specified window
+     Formula: backup_window_hours_needed = (source_tb * change_rate_pct/100 * 1024) / throughput_mbps / 3600

@@ -1,0 +1,44 @@
+question_id: 10
+question_text: >
+  SSD Sizing: What size of SSD resources is needed for an SNSD S3 volume
+  with a capacity of 100 TB?
+
+category: A
+required_sections:
+  - profile
+
+optional_sections:
+  - storage_config
+
+context_fields_used:
+  - profile.total_usable_capacity_tb
+  - storage_config.deduplication_enabled
+  - storage_config.dedup_ratio
+  - storage_config.raid_level
+
+prompt_additions: >
+  The user wants to know how much physical SSD storage is required to provision
+  an SNSD S3 volume of a given usable capacity (default example: 100 TB).
+
+  Use snsd_s3_ssd_overhead from hardware_baselines:
+  - overhead_multiplier: 1.15 (15% overhead for metadata, index, and journal)
+
+  Step 1: Base SSD requirement
+    base_ssd_tb = desired_usable_tb * overhead_multiplier (1.15)
+
+  Step 2: RAID overhead (if RAID is configured on the SSD pool)
+    Apply usable_ratio from raid_multipliers for the configured RAID level:
+    - RAID1: usable = 50% → physical = base_ssd_tb / 0.50
+    - RAID5 (n drives): usable = (n-1)/n
+    - RAID6 (n drives): usable = (n-2)/n
+    - RAID10: usable = 50% → physical = base_ssd_tb / 0.50
+    If no RAID level provided, show calculation for RAID5, RAID6, and RAID10 all three.
+
+  Step 3: Hot spare
+    Add one drive worth of capacity for hot spare (if applicable).
+
+  Show complete worked example with the user's specified capacity (or 100 TB default):
+  1. Desired usable: N TB
+  2. After SNSD overhead: N * 1.15 TB of raw SSD needed (before RAID)
+  3. After RAID overhead: final physical SSD TB required
+  4. Suggested drive configuration: e.g., "12x 4TB NVMe SSDs in RAID6"

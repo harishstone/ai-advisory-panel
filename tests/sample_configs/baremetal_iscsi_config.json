@@ -1,0 +1,31 @@
+{
+  "profile": {
+    "appliance_type": "baremetal_storage",
+    "protocols": ["iscsi"],
+    "total_usable_capacity_tb": 40,
+    "concurrent_workloads": 8
+  },
+  "storage_media": {
+    "primary_disk_type": "sas_hdd",
+    "primary_disk_capacity_tb": 4,
+    "primary_disk_count": 12,
+    "primary_disk_rpm": 7200,
+    "controller_cache_gb": 2,
+    "cache_protection": "battery"
+  },
+  "storage_config": {
+    "raid_level": "raid6",
+    "stripe_size_kb": 64,
+    "write_back_policy": "write_back",
+    "hot_spare": "global",
+    "global_spares_count": 1
+  },
+  "network": {
+    "nic_speed": "10gbe",
+    "active_data_ports": 2,
+    "bonding_mode": "lacp_802_3ad",
+    "lacp_active_links": 2,
+    "jumbo_frames_mtu9000": true,
+    "dedicated_storage_network": true
+  }
+}

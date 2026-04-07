@@ -1,0 +1,52 @@
+question_id: 1
+question_text: >
+  What IOPS, Read Throughput and Write Throughput can I expect from the
+  Baremetal Storage Appliance for iSCSI, NAS (CIFS/NFS), and S3 Object Storage?
+
+category: A
+required_sections:
+  - storage_media
+  - storage_config
+  - network
+
+optional_sections:
+  - profile
+  - environment
+
+context_fields_used:
+  - storage_media.primary_disk_type
+  - storage_media.primary_disk_count
+  - storage_media.primary_disk_rpm
+  - storage_media.controller_cache_gb
+  - storage_media.cache_protection
+  - storage_config.raid_level
+  - storage_config.stripe_size_kb
+  - storage_config.write_back_policy
+  - storage_config.io_profiles
+  - network.nic_speed
+  - network.bonding_mode
+  - network.jumbo_frames_mtu9000
+
+prompt_additions: >
+  The user wants to know expected IOPS, read throughput, and write throughput
+  for their specific hardware configuration across all protocols they are using:
+  iSCSI block storage, NAS (CIFS/NFS) file storage, and/or S3 object storage.
+
+  Use the hardware baseline data and RAID multipliers provided to calculate
+  the theoretical maximums, then apply all calibration factors.
+
+  Break down the response by protocol if multiple protocols are configured.
+
+  For iSCSI: focus on block-level IOPS and latency.
+  For NAS: focus on sequential throughput (CIFS/NFS are typically sequential).
+  For S3: focus on concurrent PUT/GET throughput and factor in object size distribution.
+
+  Provide estimates at 4K random for IOPS and 128K sequential for throughput.
+  If the customer has specified an I/O profile with a different block size, use that.
+
+  Show your calculation steps:
+  1. Single disk baseline (from hardware_baselines)
+  2. Scaled by disk count
+  3. RAID multiplier applied
+  4. Calibration factors applied
+  5. Network bandwidth ceiling check — throughput cannot exceed NIC capacity

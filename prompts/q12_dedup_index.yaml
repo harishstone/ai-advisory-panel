@@ -1,0 +1,44 @@
+question_id: 12
+question_text: >
+  Deduplication Index Resources: How much deduplication index resource is
+  required for a N TB volume?
+
+category: A
+required_sections:
+  - profile
+  - storage_config
+
+optional_sections:
+  - compute
+
+context_fields_used:
+  - profile.total_usable_capacity_tb
+  - storage_config.deduplication_enabled
+  - storage_config.dedup_ratio
+  - compute.total_ram_gb
+
+prompt_additions: >
+  The user wants to know how much RAM and fast storage is required for the
+  deduplication index for a given volume size.
+
+  StoneFly dedup index sizing rule:
+  - RAM: 1 GB of RAM per 1 TB of deduplicated data
+  - Fast storage (SSD/NVMe): for index overflow/persistence, allocate 10 GB SSD per 1 TB
+
+  Calculation:
+    deduplicated_data_tb = total_usable_capacity_tb * dedup_ratio (or 1.0 if dedup disabled)
+    ram_required_gb = deduplicated_data_tb * 1 (GB/TB)
+    ssd_index_required_gb = deduplicated_data_tb * 10 (GB/TB)
+
+  Check against available RAM (compute.total_ram_gb):
+  - If ram_required_gb > total_ram_gb * 0.25 (25% of total RAM),
+    warn that dedup index may compete with workload RAM and cause performance degradation
+  - Recommend reserving at least 50% of RAM for OS and workload VMs
+
+  Provide:
+  1. Volume size input
+  2. RAM required for dedup index (GB)
+  3. SSD fast storage required for index persistence (GB)
+  4. RAM availability check against provided compute config
+  5. Recommendation: if RAM is insufficient, consider reducing dedup scope or
+     adding RAM before enabling inline dedup

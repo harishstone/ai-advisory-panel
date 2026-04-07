@@ -1,0 +1,49 @@
+question_id: 4
+question_text: >
+  What network throughput will I get for data transfer between servers on my
+  network and the StoneFly appliance, using a single NIC Port vs using LACP
+  and/or Bonding?
+
+category: A
+required_sections:
+  - network
+
+optional_sections:
+  - profile
+
+context_fields_used:
+  - network.nic_speed
+  - network.active_data_ports
+  - network.bonding_mode
+  - network.lacp_active_links
+  - network.jumbo_frames_mtu9000
+  - network.dedicated_storage_network
+  - network.expected_latency_ms
+  - network.switch_model
+
+prompt_additions: >
+  The user wants a comparison of network throughput between single NIC and LACP/Bonding.
+
+  Use network_baselines for single NIC theoretical TCP throughput per speed tier.
+
+  Single NIC calculation:
+  - Theoretical: network_baselines[nic_speed_key]
+  - Apply MTU penalty if jumbo frames not confirmed: multiply by 0.90
+  - Apply shared network penalty if not dedicated: multiply by 0.80
+  - Result: realistic single NIC throughput in MB/s
+
+  LACP/Bonding calculation:
+  - LACP (802.3ad): single_nic_throughput * active_links * lacp_efficiency (0.85)
+  - Active/Passive: same as single NIC (no throughput gain, only redundancy)
+  - Round-Robin: single_nic_throughput * links (only for single-stream this does NOT help —
+    LACP with 802.3ad hashes per-flow, so a single TCP stream is still capped at one link speed)
+
+  Important note to include: LACP improves AGGREGATE throughput across MULTIPLE simultaneous
+  clients/streams. A single TCP stream from a single client will NOT exceed the speed of one link
+  regardless of how many links are bonded.
+
+  Show:
+  1. Single NIC: theoretical vs realistic throughput
+  2. LACP with N links: aggregate vs per-stream throughput
+  3. Switch requirements for LACP (must support 802.3ad on switch port channel)
+  4. MTU impact: jumbo frames (9000) vs standard (1500) — show the difference

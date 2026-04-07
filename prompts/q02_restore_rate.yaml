@@ -1,0 +1,49 @@
+question_id: 2
+question_text: >
+  What Restore Rate/Speed can I expect from a Veeam Backup Restore Operation,
+  both for File Level Restore and Image Level Restore respectively?
+
+category: A
+required_sections:
+  - storage_media
+  - veeam
+  - network
+
+optional_sections:
+  - storage_config
+  - profile
+
+context_fields_used:
+  - storage_media.primary_disk_type
+  - storage_media.primary_disk_count
+  - storage_media.controller_cache_gb
+  - veeam.transport_mode
+  - veeam.proxy_location
+  - veeam.restore_type
+  - veeam.restore_target
+  - veeam.concurrent_restores
+  - veeam.backup_encryption
+  - network.nic_speed
+  - network.bonding_mode
+
+prompt_additions: >
+  The user wants to know Veeam restore speeds for both File-Level Restore and
+  Image-Level (Full VM) Restore from this appliance.
+
+  Use veeam_baselines.restore_speed_multiplier_vs_backup to derive restore speed
+  from the backup speed baseline:
+  - File-level restore: 0.60x of backup speed (random I/O pattern, metadata overhead)
+  - Image-level restore: 0.85x of backup speed (more sequential)
+  - Instant VM Recovery: 0.40x (VM runs directly from backup file — heavily I/O bound)
+
+  Factor in:
+  - Proxy transport mode: Direct Storage Access is fastest; Network mode adds latency
+  - Encryption: adds ~10% CPU overhead on the proxy
+  - Concurrent restores: each additional restore reduces per-restore throughput
+  - NIC bandwidth ceiling: restore speed cannot exceed network throughput
+
+  Separate your answer into:
+  1. File-Level Restore: expected MB/s and estimated time per TB
+  2. Image-Level Restore: expected MB/s and estimated time per TB
+  3. Instant VM Recovery (if applicable): note that performance is degraded while
+     the VM runs from the backup — full performance returns after Storage vMotion completes

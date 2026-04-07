@@ -1,0 +1,81 @@
+{
+  "network": {
+    "packet_loss": {
+      "description": "TCP throughput degradation from packet loss (Mathis formula approximation)",
+      "thresholds": [
+        { "loss_pct": 0.01, "throughput_multiplier": 0.95 },
+        { "loss_pct": 0.1,  "throughput_multiplier": 0.75 },
+        { "loss_pct": 0.5,  "throughput_multiplier": 0.45 },
+        { "loss_pct": 1.0,  "throughput_multiplier": 0.25 },
+        { "loss_pct": 5.0,  "throughput_multiplier": 0.10 }
+      ]
+    },
+    "jitter_ms": {
+      "description": "Latency addition from jitter on storage protocols",
+      "iSCSI_latency_add_ms_per_jitter_ms": 2.5,
+      "NAS_latency_add_ms_per_jitter_ms": 1.8
+    },
+    "bandwidth_throttle": {
+      "description": "If bandwidth is throttled, throughput is capped at throttle_pct of theoretical max",
+      "note": "Apply directly as a multiplier"
+    }
+  },
+  "cpu": {
+    "steal_time": {
+      "description": "VM CPU steal time degrades storage performance",
+      "thresholds": [
+        { "steal_pct": 5,  "performance_multiplier": 0.95 },
+        { "steal_pct": 10, "performance_multiplier": 0.88 },
+        { "steal_pct": 20, "performance_multiplier": 0.75 },
+        { "steal_pct": 30, "performance_multiplier": 0.60 }
+      ]
+    },
+    "reservation_overhead": {
+      "description": "CPU reserved for OS/storage controller reduces available CPU for workloads",
+      "note": "Factor in cpu_reservation_pct from config"
+    }
+  },
+  "memory": {
+    "pressure": {
+      "description": "Memory pressure forcing swap degrades performance dramatically",
+      "swap_active_multiplier": 0.30,
+      "note": "If RAM is insufficient for working set, apply 0.30x multiplier to IOPS"
+    }
+  },
+  "io": {
+    "queue_depth_saturation": {
+      "description": "When queue depth exceeds controller capacity, latency increases non-linearly",
+      "typical_controller_queue_depth": 128,
+      "saturation_latency_multiplier": 3.5,
+      "note": "If expected queue depth > 128, apply 3.5x latency penalty"
+    },
+    "write_back_policy": {
+      "write_through_penalty_pct": 40,
+      "description": "Write-through mode reduces write performance by ~40% vs write-back"
+    },
+    "raid_rebuild_contention": {
+      "description": "Active RAID rebuild consumes 20-30% of I/O bandwidth",
+      "contention_multiplier": 0.70
+    }
+  },
+  "peak_hour": {
+    "tail_latency": {
+      "description": "p99 latency is typically 3-8x p50 latency under load",
+      "p99_to_p50_ratio": 5.0,
+      "queue_backpressure_additional_ms": 15
+    }
+  },
+  "veeam": {
+    "proxy_overhead_pct": 15,
+    "description": "Veeam proxy processing overhead reduces effective throughput",
+    "encryption_overhead_pct": 10,
+    "dedup_overhead_pct": 8,
+    "concurrent_jobs_scaling": {
+      "description": "Each additional concurrent job reduces per-job throughput",
+      "jobs_2": 0.85,
+      "jobs_3": 0.75,
+      "jobs_4": 0.65,
+      "jobs_5_plus": 0.55
+    }
+  }
+}

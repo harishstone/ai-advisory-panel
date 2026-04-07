@@ -1,0 +1,57 @@
+question_id: 15
+question_text: >
+  Bonding Mode Requirement: What bonding mode will be the suitable one for
+  best performance vs redundancy?
+
+category: A
+required_sections:
+  - network
+
+optional_sections:
+  - profile
+
+context_fields_used:
+  - network.nic_speed
+  - network.active_data_ports
+  - network.bonding_mode
+  - network.switch_model
+  - network.jumbo_frames_mtu9000
+  - profile.primary_workloads
+
+prompt_additions: >
+  The user wants a recommendation on the best NIC bonding mode for their use case.
+
+  Compare the main bonding modes:
+
+  1. LACP 802.3ad (Active/Active):
+     - Throughput: aggregate across all links (with per-flow hash distribution)
+     - Redundancy: yes — link failure automatically redistributes traffic
+     - Requirement: switch MUST support 802.3ad port channel / LACP on the connected ports
+     - Best for: environments with MULTIPLE simultaneous clients (NAS, S3, multi-VM iSCSI)
+     - Limitation: single TCP stream from a single client is still limited to one link speed
+
+  2. Active/Passive (Failover):
+     - Throughput: equivalent to single NIC (only one link active at a time)
+     - Redundancy: yes — instant failover on link failure
+     - Requirement: no special switch configuration needed
+     - Best for: environments that prioritize redundancy over throughput,
+       or where LACP is not supported on the switch
+
+  3. Round-Robin (Balance-RR):
+     - Throughput: can distribute across links but causes TCP packet reordering
+     - Redundancy: yes
+     - Requirement: no special switch config but switch should support it
+     - Warning: NOT recommended for iSCSI — packet reordering causes I/O errors;
+       use LACP or Active/Passive for iSCSI
+
+  4. Balance-XOR / Balance-ALB:
+     - Throughput: distributes based on MAC/IP hash
+     - Better than Round-Robin for iSCSI; less effective than LACP
+     - No switch config required
+
+  Provide:
+  1. Recommended mode based on primary workloads and switch capability
+  2. Throughput comparison table for all modes with the user's NIC speed
+  3. Switch configuration requirement summary
+  4. iSCSI-specific warning if applicable
+  5. Definitive recommendation with one-line justification

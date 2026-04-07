@@ -1,0 +1,41 @@
+question_id: 8
+question_text: >
+  How many Us will be required on my Server Rack to accommodate the appliance?
+
+category: A
+required_sections:
+  - storage_media
+
+optional_sections:
+  - profile
+
+context_fields_used:
+  - storage_media.primary_disk_type
+  - storage_media.primary_disk_count
+  - storage_media.primary_disk_capacity_tb
+  - profile.appliance_type
+
+prompt_additions: >
+  The user wants to know how many rack units (U) the appliance will occupy.
+
+  StoneFly chassis sizing guidelines (use these as reference):
+  - 1U chassis: typically holds up to 10x 2.5" drives or 4x 3.5" drives
+  - 2U chassis: typically holds 12-16x 3.5" drives or up to 24x 2.5" drives
+  - 4U chassis: typically holds 24-36x 3.5" LFF drives (large form factor)
+
+  Determine chassis size based on drive count and type:
+  - <= 4x 3.5" drives: 1U
+  - 5-16x 3.5" drives: 2U
+  - 17-36x 3.5" drives: 4U
+  - SSD/NVMe: higher density, 2.5" — typically 2U for up to 24 drives
+
+  Note: these are generic estimates. The actual chassis depends on the specific
+  StoneFly model ordered. The exact U count should be confirmed against the
+  StoneFly product catalog for the specific SKU.
+
+  Provide:
+  1. Estimated chassis size (U)
+  2. Drive density assumption used
+  3. Recommendation: confirm exact U count with StoneFly appliance datasheet
+  4. Additional rack space needed: 1U for top-of-rack switch if not already present,
+     patch panel considerations

@@ -1,0 +1,57 @@
+question_id: 5
+question_text: >
+  What would be the Best RAID Configuration for the given Number/Size/Type of
+  SAS/SSD Disks for each of the following operation types, and then also provide
+  your recommendation for the RAID Level that will give the best performance for
+  all listed operations in general?
+  Operations: Veeam Backup Jobs, Veeam Backup Copy Jobs, Veeam Replication Jobs,
+  Veeam Backup Restore Operations, Veeam Synthetic Operations,
+  iSCSI Read and Write Operations, NAS (CIFS/NFS) Read and Write Operations,
+  S3 Storage Read and Write Operations.
+
+category: A
+required_sections:
+  - storage_media
+
+optional_sections:
+  - storage_config
+  - profile
+
+context_fields_used:
+  - storage_media.primary_disk_type
+  - storage_media.primary_disk_count
+  - storage_media.primary_disk_capacity_tb
+  - storage_media.controller_cache_gb
+  - storage_media.cache_protection
+  - storage_config.stripe_size_kb
+  - profile.primary_workloads
+
+prompt_additions: >
+  The user wants a RAID recommendation for each operation type, then a single
+  best-overall recommendation.
+
+  Use raid_multipliers from hardware_baselines to compare RAID levels.
+
+  For each operation, determine the dominant I/O pattern and recommend accordingly:
+
+  - Veeam Backup Jobs: Large sequential writes (128K-512K blocks) → RAID6 or RAID60 acceptable;
+    RAID10 best if drive count allows
+  - Veeam Backup Copy Jobs: Same as backup — sequential write dominant
+  - Veeam Replication Jobs: Mixed read (source) + write (target), moderate concurrency →
+    RAID10 recommended
+  - Veeam Restore Operations: Sequential read dominant → RAID10 or RAID60 both fine;
+    RAID5/6 read performance is acceptable
+  - Veeam Synthetic Operations: Heavy random read + write (metadata-intensive) →
+    RAID10 strongly preferred; RAID5/6 write penalty severely impacts synthetic fulls
+  - iSCSI R/W: Random I/O dominant, latency-sensitive → RAID10 for write-heavy;
+    RAID5 acceptable for read-heavy
+  - NAS (CIFS/NFS) R/W: Mostly sequential → RAID6 or RAID60 acceptable; RAID10 for mixed
+  - S3 Object Storage: Sequential, large objects → RAID6 or RAID60; RAID10 for high PUT concurrency
+
+  For each RAID level considered, show:
+  - Usable capacity from the given disk count and size
+  - Fault tolerance (how many drives can fail)
+  - Estimated sequential read/write and random IOPS based on baselines
+
+  Overall recommendation: weigh the primary workloads from the profile, then give one
+  definitive RAID level with justification. If workloads conflict, recommend separate volumes.

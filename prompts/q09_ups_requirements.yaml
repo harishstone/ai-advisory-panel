@@ -1,0 +1,51 @@
+question_id: 9
+question_text: >
+  UPS Requirements: What are the recommended UPS specifications for my appliance?
+
+category: A
+required_sections:
+  - storage_media
+
+optional_sections:
+  - compute
+  - environment
+
+context_fields_used:
+  - storage_media.primary_disk_type
+  - storage_media.primary_disk_count
+  - compute.total_physical_cores
+  - compute.total_ram_gb
+  - environment.power_redundancy
+  - environment.uptime_requirement_pct
+
+prompt_additions: >
+  The user wants UPS specifications for their appliance.
+
+  Start from the peak power estimate (calculated the same way as Q7).
+
+  UPS sizing rules:
+  1. Required VA = peak_watts / power_factor (assume 0.9 for server loads)
+  2. Add 25% headroom: ups_va = required_va * 1.25
+  3. Runtime requirement: minimum 10 minutes at full load for graceful shutdown
+     For 99.9% uptime SLA: recommend 15-20 minutes
+     For 99.99% uptime SLA: recommend 30+ minutes with generator handoff
+  4. If dual PSU: the UPS must handle the FULL load (both PSUs draw power, one is standby)
+     — do NOT halve the UPS rating for dual PSU configurations
+
+  UPS form factor:
+  - < 1500W: Tower or rack 1U APC/Eaton SMT/SMX series
+  - 1500-3000W: Rack 2U APC SMX or Eaton 5PX
+  - 3000-6000W: Rack 2-3U APC SRT or Eaton 9PX
+  - > 6000W: 3-phase UPS or multiple units
+
+  Additional recommendations:
+  - BBU (Battery Backup Unit) for RAID controller cache — separate from system UPS
+  - UPS with network management card for graceful shutdown integration
+  - Runtime extender battery packs if longer runtime required
+
+  Provide:
+  1. Minimum UPS VA/W rating
+  2. Recommended VA/W with headroom
+  3. Minimum runtime needed
+  4. Recommended UPS tier/model class
+  5. Note about RAID controller BBU being separate from system UPS

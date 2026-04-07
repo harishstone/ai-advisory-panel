@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Advisory Panel — StoneFly</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50:  '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800">
+
+  <!-- Header -->
+  <header class="bg-brand-900 text-white shadow-md">
+    <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div>
+        <h1 class="text-xl font-bold tracking-tight">AI Advisory Panel</h1>
+        <p class="text-brand-100 text-sm mt-0.5">StoneFly Appliance Configuration Advisor</p>
+      </div>
+      <div id="session-badge" class="hidden items-center gap-2 text-sm bg-brand-700 px-3 py-1.5 rounded-full">
+        <span class="w-2 h-2 bg-green-400 rounded-full"></span>
+        <span id="session-quote-label">Quote loaded</span>
+        <button onclick="clearSession()" class="ml-2 text-brand-200 hover:text-white text-xs underline">Clear</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-6 py-8 space-y-6">
+
+    <!-- Step 1: Load Quote -->
+    <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-base font-semibold text-slate-700 mb-1">Step 1 — Load Quote</h2>
+      <p class="text-sm text-slate-500 mb-4">Enter a StoneFly Product Configurator quote number to auto-populate the appliance configuration.</p>
+      <div class="flex gap-3">
+        <input
+          id="quote-input"
+          type="text"
+          placeholder="e.g. 1775512473115"
+          class="flex-1 border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+        />
+        <button
+          id="load-btn"
+          onclick="loadQuote()"
+          class="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors flex items-center gap-2"
+        >
+          <span id="load-btn-text">Load Quote</span>
+          <span id="load-spinner" class="hidden spinner"></span>
+        </button>
+      </div>
+      <div id="quote-error" class="hidden mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5"></div>
+    </section>
+
+    <!-- Config Summary (shown after load) -->
+    <section id="config-summary-section" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-base font-semibold text-slate-700">Loaded Configuration</h2>
+        <span id="quote-number-badge" class="text-xs bg-brand-50 text-brand-700 border border-brand-200 px-2.5 py-1 rounded-full font-mono"></span>
+      </div>
+      <div id="sections-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2"></div>
+    </section>
+
+    <!-- Step 2: Ask a Question -->
+    <section id="questions-section" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-base font-semibold text-slate-700 mb-1">Step 2 — Ask a Question</h2>
+      <p class="text-sm text-slate-500 mb-5">Select one of the 16 pre-selected questions (Category A — High Confidence) or ask your own.</p>
+
+      <!-- Pre-selected question grid -->
+      <div id="questions-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-6">
+        <!-- Populated by app.js -->
+        <div class="col-span-full text-sm text-slate-400 py-4 text-center">Loading questions…</div>
+      </div>
+
+      <!-- Divider -->
+      <div class="flex items-center gap-3 mb-5">
+        <div class="flex-1 border-t border-slate-200"></div>
+        <span class="text-xs text-slate-400 font-medium">OR ASK A CUSTOM QUESTION</span>
+        <div class="flex-1 border-t border-slate-200"></div>
+      </div>
+
+      <!-- Custom question -->
+      <div class="space-y-3">
+        <textarea
+          id="custom-input"
+          placeholder="Type your custom question here… (Category B — Medium Confidence)"
+          rows="3"
+          class="w-full border border-slate-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"
+        ></textarea>
+        <button
+          id="custom-btn"
+          onclick="askCustom()"
+          class="bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors flex items-center gap-2"
+        >
+          <span id="custom-btn-text">Ask Custom Question</span>
+          <span id="custom-spinner" class="hidden spinner"></span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Response Panel -->
+    <section id="response-section" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+
+      <!-- Response header -->
+      <div class="flex items-start justify-between mb-4">
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <span id="response-category-badge" class="text-xs font-semibold px-2.5 py-0.5 rounded-full"></span>
+            <span id="response-loading-badge" class="hidden text-xs text-slate-500 flex items-center gap-1.5">
+              <span class="spinner-sm"></span> Generating response…
+            </span>
+          </div>
+          <h3 id="response-question" class="text-sm font-medium text-slate-600"></h3>
+        </div>
+      </div>
+
+      <!-- Calibration warnings -->
+      <div id="calibration-warnings" class="hidden mb-4 space-y-2"></div>
+
+      <!-- Response body -->
+      <div id="response-body" class="prose-response"></div>
+
+      <!-- Response error -->
+      <div id="response-error" class="hidden text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3"></div>
+    </section>
+
+  </main>
+
+  <footer class="max-w-5xl mx-auto px-6 py-6 text-center text-xs text-slate-400">
+    AI Advisory Panel &mdash; StoneFly Internal Tool &mdash; Responses are AI-generated estimates, not official StoneFly specifications.
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

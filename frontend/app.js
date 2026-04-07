@@ -272,9 +272,9 @@ function addAssistantMessage(data) {
   const time = formatTime();
 
   const warningsHTML = (data.calibration_warnings || []).map(w => `
-    <div class="flex gap-2 text-xs bg-amber-50 border border-amber-100 text-amber-700 rounded-xl px-3 py-2.5 mb-3 leading-relaxed">
+    <div class="flex gap-2 text-xs bg-blue-50 border border-blue-100 text-blue-700 rounded-xl px-3 py-2.5 mb-3 leading-relaxed">
       <svg class="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
       </svg>
       <span>${escapeHtml(w)}</span>
     </div>
@@ -284,11 +284,8 @@ function addAssistantMessage(data) {
     <div class="flex gap-3 message-in">
       <div class="ai-avatar flex-shrink-0">AI</div>
       <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-2 mb-2.5">
-          <span class="text-xs font-semibold text-gray-500">AI Advisory</span>
-          <span class="cat-badge ${isA ? 'cat-a' : 'cat-b'}">
-            ${isA ? 'Category A · High Confidence' : 'Category B · Medium Confidence'}
-          </span>
+        <div class="flex items-center mb-2.5">
+          <span class="text-xs font-semibold text-gray-400">AI Advisory</span>
           <span class="text-xs text-gray-400 ml-auto">${time}</span>
         </div>
         ${warningsHTML}
@@ -396,15 +393,6 @@ function formatResponse(text) {
 
   // Numbered lists
   html = html.replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>');
-
-  // Confidence level highlight
-  html = html.replace(
-    /(CONFIDENCE(?:\s+LEVEL)?:?\s*)(High|Medium|Low)/gi,
-    (_, prefix, level) => {
-      const cls = { high: 'conf-high', medium: 'conf-medium', low: 'conf-low' }[level.toLowerCase()] || '';
-      return `<span class="conf-badge ${cls}">${prefix}${level}</span>`;
-    }
-  );
 
   // Paragraph breaks
   html = html.replace(/\n\n+/g, '</p><p class="response-para">');

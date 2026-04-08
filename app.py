@@ -1,7 +1,9 @@
 import os
+import json
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
 from dotenv import load_dotenv
@@ -122,7 +124,35 @@ def ask_question(req: AskQuestionRequest):
     }
 
 
-# ─── Endpoint 4: Get Config Summary ───────────────────────────────────────────
+# ─── Endpoint 4: Ask a Question (Streaming) ───────────────────────────────────
+
+@app.post("/api/ask-stream")
+async def ask_question_stream(req: AskQuestionRequest):
+    """Streaming version of /api/ask — sends tokens via SSE as they are generated."""
+    if not store.has_config():
+        raise HTTPException(status_code=400, detail="No quote loaded. Call /api/load-quote first.")
+
+    if req.question_id is not None:
+        if not 1 <= req.question_id <= 16:
+            raise HTTPException(status_code=400, detail="question_id must be 1–16.")
+        gen = engine.ask_preselected_stream(req.question_id)
+    elif req.custom_question and req.custom_question.strip():
+        gen = engine.ask_custom_stream(req.custom_question.strip())
+    else:
+        raise HTTPException(status_code=400, detail="Provide question_id or custom_question.")
+
+    async def event_generator():
+        async for event in gen:
+            yield f"data: {json.dumps(event)}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+    )
+
+
+# ─── Endpoint 5: Get Config Summary ───────────────────────────────────────────
 
 @app.get("/api/config-summary")
 def config_summary():

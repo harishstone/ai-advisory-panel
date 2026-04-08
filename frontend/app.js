@@ -148,7 +148,6 @@ async function askPreselected(questionId, buttonEl) {
   }
   if (state.isThinking) return;
 
-  // Activate sidebar button
   document.querySelectorAll('.q-btn').forEach(btn => btn.classList.remove('q-btn-active'));
   buttonEl.classList.add('q-btn-active');
   state.activeQuestionId = questionId;
@@ -156,28 +155,7 @@ async function askPreselected(questionId, buttonEl) {
   const questionText = buttonEl.querySelector('.q-text').textContent.trim();
   addUserMessage(questionText);
   const thinkingId = addThinkingMessage();
-
-  try {
-    const res = await fetch(`${API_BASE}/api/ask`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question_id: questionId })
-    });
-
-    const data = await res.json();
-    removeThinkingMessage(thinkingId);
-
-    if (!res.ok) {
-      addErrorMessage(data.detail || 'Failed to get a response.');
-      return;
-    }
-
-    addAssistantMessage(data);
-
-  } catch {
-    removeThinkingMessage(thinkingId);
-    addErrorMessage('Network error — is the backend running?');
-  }
+  await streamAsk({ question_id: questionId }, thinkingId);
 }
 
 // ─── Ask Custom ───────────────────────────────────────────────────────────────
@@ -200,29 +178,67 @@ async function askCustom() {
   addUserMessage(question);
   const thinkingId = addThinkingMessage();
   setCustomBtnLoading(true);
+  await streamAsk({ custom_question: question }, thinkingId);
+  setCustomBtnLoading(false);
+}
 
+// ─── Stream Ask ───────────────────────────────────────────────────────────────
+
+async function streamAsk(body, thinkingId) {
   try {
-    const res = await fetch(`${API_BASE}/api/ask`, {
+    const res = await fetch(`${API_BASE}/api/ask-stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ custom_question: question })
+      body: JSON.stringify(body)
     });
 
-    const data = await res.json();
-    removeThinkingMessage(thinkingId);
-
     if (!res.ok) {
+      removeThinkingMessage(thinkingId);
+      const data = await res.json().catch(() => ({}));
       addErrorMessage(data.detail || 'Failed to get a response.');
       return;
     }
 
-    addAssistantMessage(data);
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let msgId = null;
+    let fullText = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // keep incomplete line
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let event;
+        try { event = JSON.parse(line.slice(6)); } catch { continue; }
+
+        if (event.type === 'start') {
+          removeThinkingMessage(thinkingId);
+          msgId = createStreamingBubble(event.warnings || []);
+
+        } else if (event.type === 'token' && msgId) {
+          fullText += event.text;
+          updateStreamingBubble(msgId, fullText);
+
+        } else if (event.type === 'done' && msgId) {
+          finalizeStreamingBubble(msgId, fullText);
+
+        } else if (event.type === 'error') {
+          removeThinkingMessage(thinkingId);
+          addErrorMessage(event.message);
+        }
+      }
+    }
 
   } catch {
     removeThinkingMessage(thinkingId);
     addErrorMessage('Network error — is the backend running?');
-  } finally {
-    setCustomBtnLoading(false);
   }
 }
 
@@ -268,7 +284,6 @@ function removeThinkingMessage(id) {
 
 function addAssistantMessage(data) {
   showChat();
-  const isA = data.category === 'A';
   const time = formatTime();
 
   const warningsHTML = (data.calibration_warnings || []).map(w => `
@@ -295,6 +310,51 @@ function addAssistantMessage(data) {
       </div>
     </div>
   `);
+}
+
+function createStreamingBubble(warnings) {
+  showChat();
+  const id = `msg-${Date.now()}`;
+  const time = formatTime();
+
+  const warningsHTML = warnings.map(w => `
+    <div class="flex gap-2 text-xs bg-blue-50 border border-blue-100 text-blue-700 rounded-xl px-3 py-2.5 mb-3 leading-relaxed">
+      <svg class="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+      </svg>
+      <span>${escapeHtml(w)}</span>
+    </div>
+  `).join('');
+
+  appendToChat(`
+    <div class="flex gap-3 message-in" id="${id}">
+      <div class="ai-avatar flex-shrink-0">AI</div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center mb-2.5">
+          <span class="text-xs font-semibold text-gray-400">AI Advisory</span>
+          <span class="text-xs text-gray-400 ml-auto">${time}</span>
+        </div>
+        ${warningsHTML}
+        <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-5 py-4 shadow-sm prose-response" id="${id}-body">
+          <span id="${id}-text" class="streaming-text"></span>
+        </div>
+      </div>
+    </div>
+  `);
+
+  return id;
+}
+
+function updateStreamingBubble(id, fullText) {
+  const body = document.getElementById(`${id}-body`);
+  if (body) body.innerHTML = formatResponse(fullText);
+  scrollToBottom();
+}
+
+function finalizeStreamingBubble(id, fullText) {
+  const body = document.getElementById(`${id}-body`);
+  if (body) body.innerHTML = formatResponse(fullText);
+  scrollToBottom();
 }
 
 function addSystemMessage(text) {
@@ -370,7 +430,38 @@ async function clearSession() {
 function formatResponse(text) {
   if (!text) return '';
 
+  // Strip LaTeX notation before escaping — gpt-4o sometimes outputs it
+  // \( ... \) inline math → extract inner content
+  text = text.replace(/\\\((.+?)\\\)/gs, (_, inner) =>
+    inner.replace(/\\,/g, ' ').replace(/\\text\{(.+?)\}/g, '$1')
+         .replace(/\\times/g, '×').replace(/\\div/g, '÷')
+         .replace(/\\frac\{(.+?)\}\{(.+?)\}/g, '($1) / ($2)')
+         .replace(/\\_/g, '_').replace(/\s+/g, ' ').trim()
+  );
+  // \[ ... \] block math → same treatment
+  text = text.replace(/\\\[(.+?)\\\]/gs, (_, inner) =>
+    inner.replace(/\\,/g, ' ').replace(/\\text\{(.+?)\}/g, '$1')
+         .replace(/\\times/g, '×').replace(/\\div/g, '÷')
+         .replace(/\\frac\{(.+?)\}\{(.+?)\}/g, '($1) / ($2)')
+         .replace(/\s+/g, ' ').trim()
+  );
+
   let html = escapeHtml(text);
+
+  // Tables — must run before newline processing
+  html = html.replace(/((?:\|[^\n]+\|\n?){2,})/g, (match) => {
+    const lines = match.trim().split('\n').filter(l => l.trim());
+    if (lines.length < 2 || !/^\|[\s\-:|]+\|/.test(lines[1])) return match;
+    const headers = lines[0].split('|').slice(1, -1)
+      .map(c => `<th>${c.trim()}</th>`).join('');
+    const rows = lines.slice(2).map(row =>
+      `<tr>${row.split('|').slice(1, -1).map(c => `<td>${c.trim()}</td>`).join('')}</tr>`
+    ).join('');
+    return `<div class="table-wrap"><table class="response-table">
+      <thead><tr>${headers}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+  });
 
   // Markdown headers
   html = html.replace(/^#{1,3}\s+(.+)$/gm, (_, h) =>

@@ -200,6 +200,40 @@
   margin-bottom: 0.25rem;
 }
 
+/* ─── Response Table ───────────────────────────────────────────────────────── */
+
+.table-wrap {
+  overflow-x: auto;
+  margin: 0.75rem 0;
+}
+
+.response-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.response-table th {
+  background: #f8fafc;
+  color: #374151;
+  font-weight: 600;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.response-table td {
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  color: #1e293b;
+  vertical-align: top;
+}
+
+.response-table tr:nth-child(even) td {
+  background: #f8fafc;
+}
+
 /* ─── Confidence Badges ────────────────────────────────────────────────────── */
 
 .conf-badge {
@@ -213,6 +247,28 @@
 .conf-high   { background: #dcfce7; color: #15803d; }
 .conf-medium { background: #fef9c3; color: #854d0e; }
 .conf-low    { background: #fee2e2; color: #991b1b; }
+
+/* ─── Streaming Cursor ─────────────────────────────────────────────────────── */
+
+.streaming-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.cursor-blink {
+  display: inline-block;
+  color: #2563eb;
+  font-weight: 300;
+  font-size: 1rem;
+  line-height: 1;
+  margin-left: 1px;
+  animation: cursor-blink 0.8s step-end infinite;
+}
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
 
 /* ─── Input Shake ──────────────────────────────────────────────────────────── */
 

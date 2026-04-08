@@ -48,21 +48,21 @@ class QuoteImporter:
     The API returns unstructured product description strings — we parse them with regex.
     """
 
-    API_URL = os.environ.get(
-        "QUOTE_API_URL",
-        "https://staging.stonefly.com/api/quote_config_json.php"
-    )
-    API_TOKEN = os.environ.get("QUOTE_API_TOKEN", "")
+    API_URL = "https://staging.stonefly.com/api/quote_config_json.php"
 
     async def fetch_and_map(self, quote_number: str) -> ApplianceConfig:
         """Fetch quote from the Product Configurator API and return an ApplianceConfig."""
+        url = os.environ.get("QUOTE_API_URL", self.API_URL)
+        token = os.environ.get("QUOTE_API_TOKEN", "")
+
+        headers = {"Content-Type": "application/json"}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+
         async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.post(
-                self.API_URL,
-                headers={
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {self.API_TOKEN}"
-                },
+                url,
+                headers=headers,
                 json={"quote_number": quote_number}
             )
             response.raise_for_status()

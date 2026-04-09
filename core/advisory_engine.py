@@ -143,7 +143,8 @@ Provide a complete advisory response following the structure defined in your sys
         'veeam', 'iscsi', 'nas', 'nfs', 's3', 'dedup', 'cache', 'power', 'ups',
         'watt', 'rack', 'drive', 'ssd', 'nvme', 'hdd', 'storage', 'read', 'write',
         'sizing', 'capacity', 'estimate', 'calculate', 'how much', 'how many',
-        'bonding', 'lacp', 'rebuild', 'parity', 'stripe', 'volume', 'pool'
+        'bonding', 'lacp', 'rebuild', 'parity', 'stripe', 'volume', 'pool',
+        'concurrent', 'snapshot', 'efficiency', 'compression',
     }
 
     async def _run_query_stream(self, question_text: str, prompt_additions: str,
@@ -158,9 +159,26 @@ Provide a complete advisory response following the structure defined in your sys
             user_prompt = self._build_user_prompt(config_json, calibration_ctx,
                                                   question_text, prompt_additions)
         else:
-            # Conversational question — do NOT include hardware data or calibration.
-            # Giving the model numbers to work with causes it to produce unsolicited estimates.
-            user_prompt = f"The user asked: {question_text}\n\nAnswer naturally and conversationally. Do not produce performance calculations or estimates."
+            # Conversational question — include config summary so the AI can
+            # reference the loaded quote, but WITHOUT baselines/calibration
+            # data that causes it to produce unsolicited performance estimates.
+            if config_json:
+                config_snippet = json.dumps(config_json, indent=2)
+                user_prompt = (
+                    f"## LOADED APPLIANCE CONFIGURATION\n"
+                    f"(The user has a quote loaded. You can reference these details if they ask about their config.)\n"
+                    f"```json\n{config_snippet}\n```\n\n"
+                    f"## USER MESSAGE\n{question_text}\n\n"
+                    f"Respond naturally and conversationally. If they ask about their config or quote, "
+                    f"reference the actual data above. Do NOT produce performance calculations or "
+                    f"estimates unless they specifically ask for numbers."
+                )
+            else:
+                user_prompt = (
+                    f"## USER MESSAGE\n{question_text}\n\n"
+                    f"No quote is currently loaded. If they ask about their config, let them know "
+                    f"they can load a quote from the sidebar. Respond naturally and conversationally."
+                )
 
         yield {"type": "start", "question": question_text.strip(), "warnings": warnings}
 

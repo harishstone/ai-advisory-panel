@@ -511,41 +511,40 @@ function formatResponse(text) {
   );
 
   // ── Mojibake recovery ──────────────────────────────────────────────────
-  // If UTF-8 bytes were decoded as Windows-1252/Latin-1, these byte
-  // patterns appear. We repair them BEFORE any other processing.
+  // If UTF-8 bytes were decoded as Windows-1252 (Python's cp1252 default on Windows), 
+  // these exact byte patterns appear. We repair them BEFORE any other processing.
   text = text
-    .replace(/\u00c3\u0097/g, '\u00d7')    // Ã— → × (multiplication sign)
-    .replace(/\u00c3\u00b7/g, '\u00f7')    // Ã· → ÷ (division sign)
-    .replace(/\u00c3\u2014/g, '\u00d7')    // Ã— alt form
-    .replace(/\u00e2\u0080\u0094/g, '\u2014') // â€" → — (em dash)
-    .replace(/\u00e2\u0080\u0093/g, '\u2013') // â€" → – (en dash)
-    .replace(/\u00e2\u0080\u00a2/g, '\u2022') // â€¢ → • (bullet)
-    .replace(/\u00e2\u0080\u0099/g, '\u2019') // â€™ → ' (right single quote)
-    .replace(/\u00e2\u0080\u009c/g, '\u201c') // â€œ → " (left double quote)
-    .replace(/\u00e2\u0080\u009d/g, '\u201d') // â€ → " (right double quote)
-    .replace(/\u00e2\u0089\u0088/g, '\u2248') // â‰ˆ → ≈ (approximately)
-    .replace(/\u00e2\u0089\u00a5/g, '\u2265') // â‰¥ → ≥ (greater or equal)
-    .replace(/\u00e2\u0089\u00a4/g, '\u2264') // â‰¤ → ≤ (less or equal)
-    .replace(/\u00c2\u00b1/g, '\u00b1')    // Â± → ± (plus/minus)
-    .replace(/\u00e2\u0086\u0092/g, '\u2192') // â†' → → (right arrow)
-    .replace(/\u00e2\u0080\u00a6/g, '\u2026') // â€¦ → … (ellipsis)
+    .replace(/\u00c3\u0097/g, '\u00d7')    // Ã— → ×
+    .replace(/\u00c3\u00b7/g, '\u00f7')    // Ã· → ÷
+    .replace(/\u00e2\u20ac\u201d/g, '\u2014') // â€” → — (em dash)
+    .replace(/\u00e2\u20ac\u201c/g, '\u2013') // â€“ → – (en dash)
+    .replace(/\u00e2\u20ac\u00a2/g, '\u2022') // â€¢ → •
+    .replace(/\u00e2\u20ac\u2122/g, '\u2019') // â€™ → ' 
+    .replace(/\u00e2\u20ac\u0153/g, '\u201c') // â€œ → " 
+    .replace(/\u00e2\u20ac\u009d/g, '\u201d') // â€? → " 
+    .replace(/\u00e2\u0089\u0088/g, '\u2248') // â‰ˆ → ≈
+    .replace(/\u00e2\u0089\u00a5/g, '\u2265') // â‰¥ → ≥
+    .replace(/\u00e2\u0089\u00a4/g, '\u2264') // â‰¤ → ≤
+    .replace(/\u00c2\u00b1/g, '\u00b1')    // Â± → ±
+    .replace(/\u00e2\u2020\u2019/g, '\u2192') // â†’ → →
+    .replace(/\u00e2\u20ac\u00a6/g, '\u2026') // â€¦ → …
     .replace(/\u00c2\u00a0/g, ' ');         // Â  → non-breaking space
 
-  // Also repair common text-level mojibake patterns (regex-based fallback)
+  // Additional fallback for literal text variations
   text = text
     .replace(/Ã\u0097/g, '×')
     .replace(/Ã\u00b7/g, '÷')
-    .replace(/â€"/g, '—')
-    .replace(/â€"/g, '–')
+    .replace(/â€”/g, '—')
+    .replace(/â€“/g, '–')
     .replace(/â€™/g, "'")
     .replace(/â€œ/g, '"')
-    .replace(/â€\u009d/g, '"')
     .replace(/Â±/g, '±')
     .replace(/â‰¥/g, '≥')
     .replace(/â‰¤/g, '≤')
     .replace(/â‰ˆ/g, '≈')
-    .replace(/â†'/g, '→')
+    .replace(/â†’/g, '→')
     .replace(/â€¦/g, '…')
+    .replace(/â€"/g, '—') // catch the exact quote string seen by the user
     .replace(/Â /g, ' ');
 
   // Normalize display: keep Unicode symbols readable but consistent

@@ -514,7 +514,8 @@ function formatResponse(text) {
   // If UTF-8 bytes were decoded as Windows-1252 (Python's cp1252 default on Windows), 
   // these exact byte patterns appear. We repair them BEFORE any other processing.
   text = text
-    .replace(/\u00c3\u0097/g, '\u00d7')    // Ã— → ×
+    .replace(/\u00c3\u2014/g, '\u00d7')    // Ã— → × (cp1252 mapping for \xc3\x97)
+    .replace(/\u00c3\u0097/g, '\u00d7')    // Ã— → × (latin1 mapping)
     .replace(/\u00c3\u00b7/g, '\u00f7')    // Ã· → ÷
     .replace(/\u00e2\u20ac\u201d/g, '\u2014') // â€” → — (em dash)
     .replace(/\u00e2\u20ac\u201c/g, '\u2013') // â€“ → – (en dash)

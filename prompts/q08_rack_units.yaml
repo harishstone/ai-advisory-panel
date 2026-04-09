@@ -26,8 +26,16 @@ prompt_additions: >
   - 36-bay → 4U  (Chenbro RM41736H)
   - 60-bay → 4U  (AIC RSC-4H1 or J4060-04-35X)
 
-  Use primary_disk_count from the quote config to identify the chassis and
-  give the exact confirmed U size — no need to estimate.
+  Drive count to chassis mapping — use the SMALLEST chassis that can fit the drive count:
+  - 1–8 drives   → 8-bay chassis  (2U, AIC RSC-2KT)
+  - 9–12 drives  → 12-bay chassis (2U, AIC RSC-2ET)
+  - 13–16 drives → 16-bay chassis (4U, AIC RSC-3ET)
+  - 17–24 drives → 24-bay chassis (4U, AIC RSC-4ET)
+  - 25–36 drives → 36-bay chassis (4U, Chenbro RM41736H)
+  - 37–60 drives → 60-bay chassis (4U, AIC RSC-4H1)
+
+  Use primary_disk_count from the quote config and the mapping above to give the
+  exact confirmed U size and chassis model.
 
   Provide:
   1. Chassis U size (confirmed value from table above)

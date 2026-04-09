@@ -51,3 +51,6 @@ prompt_additions: >
   3. RAID level specific notes
   4. URE risk assessment for large HDD arrays
   5. Recommendation: monitor rebuild progress and reduce I/O load if possible during rebuild
+
+  IMPORTANT: Write all math as plain text. Example: "13.3 TB × 3.5 hrs/TB = 46.6 hrs".
+  Never use LaTeX notation like \( \text{} \) or \( \times \).

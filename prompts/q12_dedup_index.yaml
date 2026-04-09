@@ -50,3 +50,6 @@ prompt_additions: >
   5. RAM availability check against provided compute config
   6. Recommendation: if RAM is insufficient, consider reducing dedup pool size or
      adding RAM before enabling inline dedup
+
+  IMPORTANT: Write all math as plain text. Example: "120 TB x 5 GB/TB = 600 GB RAM".
+  Never use LaTeX notation like \( \text{} \) or \( \times \).

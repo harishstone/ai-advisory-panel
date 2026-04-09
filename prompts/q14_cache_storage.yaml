@@ -39,8 +39,11 @@ prompt_additions: >
     (Pareto principle — 20% of data accounts for 80% of I/O)
 
   Provide:
-  1. Backing storage usable capacity (TB)
+  1. Backing storage usable capacity (TB) — use actual values from config, not "N TB"
   2. Recommended FC SSD size (GB/TB)
   3. Working set estimate and whether the cache covers it
   4. Access pattern impact: random vs sequential — FC helps random reads most
   5. Recommendation: NVMe preferred over SATA SSD for FC tier due to latency
+
+  IMPORTANT: Write all math as plain text. Example: "(9 - 2) / 9 × 120 TB = 93.3 TB".
+  Never use LaTeX notation like \( \) or \[ \].

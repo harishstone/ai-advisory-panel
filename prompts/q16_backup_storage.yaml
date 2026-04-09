@@ -28,29 +28,32 @@ context_fields_used:
 prompt_additions: >
   The user wants to calculate how much backup storage is needed for their VM environment.
 
-  Core formula:
-    full_backup_tb = source_data_tb
-    incremental_per_day_tb = source_data_tb * (daily_change_rate_pct / 100)
-    total_before_efficiency = full_backup_tb + (incremental_per_day_tb * retention_days)
+  IMPORTANT: Use actual values from the appliance config — do NOT use "N TB" or placeholder
+  variables. Use total_usable_capacity_tb as the source data size (this is the protected dataset
+  size). If daily_change_rate_pct is missing from the config, assume 5% as the default.
 
-  Retention periods to show (ask user or default to common values):
-  - 7 days (short-term)
-  - 14 days (two-week)
-  - 30 days (monthly)
+  Core formula (substitute real numbers from config):
+    source_data_tb = total_usable_capacity_tb (from profile section)
+    daily_change_tb = source_data_tb * (daily_change_rate_pct / 100)
+    total_before_efficiency_7d  = source_data_tb + (daily_change_tb * 7)
+    total_before_efficiency_14d = source_data_tb + (daily_change_tb * 14)
+    total_before_efficiency_30d = source_data_tb + (daily_change_tb * 30)
 
   Apply storage efficiency if dedup/compression enabled:
-    effective_storage_needed = total_before_efficiency / dedup_ratio
+    effective_storage_tb = total_before_efficiency / dedup_ratio
 
   Add overhead:
   - Veeam metadata overhead: +5%
   - Synthetic full storage overhead (if weekly): additional full backup worth of space per week
-  - Backup Copy Job target: if enabled, multiply storage by 2 (or factor in target capacity separately)
+  - Backup Copy Job target: if enabled, double the storage requirement
 
-  Show:
-  1. Full backup size (= source data)
-  2. Incremental chain size per day
-  3. Total storage needed for 7 / 14 / 30 day retention (before efficiency)
-  4. Total storage needed after dedup/compression (if enabled)
-  5. Final recommendation with 20% buffer for metadata and growth
-  6. Warning: if backup encryption is enabled, dedup will be ineffective — disable
-     dedup on encrypted backup repositories or use Veeam's built-in dedupe instead
+  Show calculated numbers for each retention period:
+  1. Source data size (TB) — from config
+  2. Daily change rate assumption
+  3. Total raw storage needed for 7 / 14 / 30 day retention
+  4. Total storage after dedup/compression (if enabled in config)
+  5. Final recommendation with 20% growth buffer
+  6. Warning: if backup encryption is enabled, dedup will be ineffective
+
+  IMPORTANT: Write all math as plain text. Example: "120 TB + (6 TB × 7) = 162 TB".
+  Never use LaTeX notation.

@@ -29,11 +29,20 @@ prompt_additions: >
   - 36-bay (4U): 1200W CRPS PSU → typical system peak ~750-950W
   - 60-bay (4U): 1600W PSU → typical system peak ~1000-1300W
 
-  Start from the peak power estimate (calculated the same way as Q7).
+  STEP 1 — Calculate peak system power (do this explicitly, do not guess):
+    storage_power_w  = primary_disk_count × 10W (HDD) or 5W (SSD) or 8W (NVMe)
+    fast_tier_w      = fast_tier_capacity_gb > 0 ? 8W : 0
+    cpu_power_w      = total_physical_cores × 8W
+    ram_power_w      = total_ram_gb × 0.375W
+    platform_overhead_w = 100W (2U chassis) or 175W (4U chassis)
+    raw_sum_w        = storage_power_w + fast_tier_w + cpu_power_w + ram_power_w + platform_overhead_w
+    peak_watts       = raw_sum_w / 0.92 (PSU efficiency)
+    idle_watts       = peak_watts × 0.60
 
-  UPS sizing rules:
-  1. Required VA = peak_watts / power_factor (assume 0.9 for server loads)
-  2. Add 25% headroom: ups_va = required_va * 1.25
+  STEP 2 — Size the UPS from the calculated peak_watts:
+  1. required_va    = peak_watts / 0.9 (power factor for server loads)
+  2. ups_va_with_headroom = required_va × 1.25
+  (Do NOT use the PSU capacity as the system draw — actual draw is much lower than PSU rating)
   3. Runtime requirement: minimum 10 minutes at full load for graceful shutdown
      For 99.9% uptime SLA: recommend 15-20 minutes
      For 99.99% uptime SLA: recommend 30+ minutes with generator handoff

@@ -26,6 +26,14 @@ prompt_additions: >
   Also reference chassis_psu_ratings_watts for the confirmed PSU capacity of this
   specific chassis model.
 
+  Drive count to chassis mapping — use the SMALLEST chassis that can fit the drive count:
+  - 1–8 drives   → 8-bay  (2U, AIC RSC-2KT)
+  - 9–12 drives  → 12-bay (2U, AIC RSC-2ET)
+  - 13–16 drives → 16-bay (4U, AIC RSC-3ET)
+  - 17–24 drives → 24-bay (4U, AIC RSC-4ET)
+  - 25–36 drives → 36-bay (4U, Chenbro RM41736H)
+  - 37–60 drives → 60-bay (4U, AIC RSC-4H1)
+
   Chassis PSU ratings (from AIC/Chenbro datasheets, confirmed by StoneFly):
   - 8-bay  (2U, AIC RSC-2KT):        550W PSU (1+1 redundant)
   - 12-bay (2U, AIC RSC-2ET):        800W PSU (1+1 redundant)

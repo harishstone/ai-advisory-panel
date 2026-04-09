@@ -47,3 +47,6 @@ prompt_additions: >
   5. Warning: dedup effectiveness varies greatly with data type —
      already-compressed or encrypted data (e.g., encrypted Veeam backups) will NOT deduplicate well
   6. CPU/RAM overhead note: inline dedup adds ~10-15% CPU overhead; index requires RAM
+
+  IMPORTANT: Write all math as plain text. Example: "120 TB × 2.5 = 300 TB effective".
+  Never use LaTeX notation like \( \) or \[ \].

@@ -55,3 +55,6 @@ prompt_additions: >
 
   Overall recommendation: weigh the primary workloads from the profile, then give one
   definitive RAID level with justification. If workloads conflict, recommend separate volumes.
+
+  IMPORTANT: Write all math as plain text. Example: "(9 - 2) / 9 × 120 TB = 93.3 TB usable".
+  Never use LaTeX notation like \( \frac{}{} \) or \( \times \).

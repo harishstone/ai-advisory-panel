@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from core.advisory_engine import AdvisoryEngine
 from core.session_store import SessionStore
 from core.quote_import import QuoteImporter
+from core.calibration import CalibrationEngine
 
 load_dotenv()
 
@@ -26,6 +27,7 @@ app.add_middleware(
 engine = AdvisoryEngine()
 store = SessionStore.get()
 importer = QuoteImporter()
+calibration = CalibrationEngine()
 
 
 # ─── Request Models ────────────────────────────────────────────────────────────
@@ -54,11 +56,14 @@ async def load_quote(req: LoadQuoteRequest):
                          "storage_config", "network", "veeam", "environment"]
             if getattr(config, s) is not None
         ]
+        calibration_ctx = calibration.build_calibration_context(config)
+        warnings = calibration_ctx.get("warnings", [])
         return {
             "success": True,
             "quote_number": req.quote_number,
             "sections_loaded": loaded_sections,
-            "config_summary": config.model_dump(exclude_none=True)
+            "config_summary": config.model_dump(exclude_none=True),
+            "warnings": warnings
         }
     except NotImplementedError as e:
         raise HTTPException(status_code=501, detail=str(e))

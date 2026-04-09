@@ -79,6 +79,9 @@ async function loadQuote() {
     state.quoteNumber = quoteNumber;
     renderConfigStatus(data);
     addSystemMessage(`Quote #${quoteNumber} loaded — ${data.sections_loaded.length} configuration sections available`);
+    if (data.warnings && data.warnings.length > 0) {
+      addWarningsBlock(data.warnings);
+    }
 
   } catch (err) {
     showQuoteError('Network error — is the backend running?');
@@ -220,7 +223,7 @@ async function streamAsk(body, thinkingId) {
 
         if (event.type === 'start') {
           removeThinkingMessage(thinkingId);
-          msgId = createStreamingBubble(event.warnings || []);
+          msgId = createStreamingBubble();
 
         } else if (event.type === 'token' && msgId) {
           fullText += event.text;
@@ -312,19 +315,10 @@ function addAssistantMessage(data) {
   `);
 }
 
-function createStreamingBubble(warnings) {
+function createStreamingBubble() {
   showChat();
   const id = `msg-${Date.now()}`;
   const time = formatTime();
-
-  const warningsHTML = warnings.map(w => `
-    <div class="flex gap-2 text-xs bg-blue-50 border border-blue-100 text-blue-700 rounded-xl px-3 py-2.5 mb-3 leading-relaxed">
-      <svg class="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-      </svg>
-      <span>${escapeHtml(w)}</span>
-    </div>
-  `).join('');
 
   appendToChat(`
     <div class="flex gap-3 message-in" id="${id}">
@@ -334,7 +328,6 @@ function createStreamingBubble(warnings) {
           <span class="text-xs font-semibold text-gray-400">AI Advisory</span>
           <span class="text-xs text-gray-400 ml-auto">${time}</span>
         </div>
-        ${warningsHTML}
         <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-5 py-4 shadow-sm prose-response" id="${id}-body">
           <span id="${id}-text" class="streaming-text"></span>
         </div>
@@ -363,6 +356,26 @@ function addSystemMessage(text) {
     <div class="flex justify-center message-in">
       <div class="text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-4 py-1.5">
         ${escapeHtml(text)}
+      </div>
+    </div>
+  `);
+}
+
+function addWarningsBlock(warnings) {
+  showChat();
+  const items = warnings.map(w => `
+    <div class="flex gap-2 items-start">
+      <svg class="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+      </svg>
+      <span>${escapeHtml(w)}</span>
+    </div>
+  `).join('');
+  appendToChat(`
+    <div class="flex justify-center message-in">
+      <div class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 max-w-[85%] space-y-1.5 leading-relaxed">
+        <div class="font-semibold text-amber-800 mb-1">Configuration notices for this quote:</div>
+        ${items}
       </div>
     </div>
   `);

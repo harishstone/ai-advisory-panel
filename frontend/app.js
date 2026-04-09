@@ -485,6 +485,20 @@ function formatResponse(text) {
 
   let html = escapeHtml(text);
 
+  // Replace Unicode characters with HTML entities to prevent encoding display issues
+  html = html
+    // Math symbols
+    .replace(/×/g, '&times;').replace(/÷/g, '&divide;')
+    .replace(/≈/g, '&asymp;').replace(/≥/g, '&ge;').replace(/≤/g, '&le;')
+    .replace(/±/g, '&plusmn;').replace(/→/g, '&rarr;')
+    // Dashes
+    .replace(/—/g, '&mdash;').replace(/–/g, '&ndash;')
+    // Curly quotes → straight quotes
+    .replace(/\u2018|\u2019/g, "'")
+    .replace(/\u201C|\u201D/g, '"')
+    // Ellipsis
+    .replace(/…/g, '&hellip;');
+
   // Tables — must run before newline processing
   html = html.replace(/((?:\|[^\n]+\|\n?){2,})/g, (match) => {
     const lines = match.trim().split('\n').filter(l => l.trim());

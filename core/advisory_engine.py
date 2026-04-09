@@ -27,10 +27,10 @@ class AdvisoryEngine:
         self.calibration = CalibrationEngine()
         self.session = SessionStore.get()
 
-        with open(self.BASELINES_PATH) as f:
+        with open(self.BASELINES_PATH, encoding='utf-8') as f:
             self.baselines = json.load(f)
 
-        with open(self.PROMPTS_DIR / "system_base.txt") as f:
+        with open(self.PROMPTS_DIR / "system_base.txt", encoding='utf-8') as f:
             self.system_base = f.read()
 
     def ask_preselected(self, question_id: int) -> dict:
@@ -39,7 +39,7 @@ class AdvisoryEngine:
         if not matches:
             return {"error": f"No prompt template found for question ID {question_id}"}
 
-        with open(matches[0]) as f:
+        with open(matches[0], encoding='utf-8') as f:
             template = yaml.safe_load(f)
 
         return self._run_query(
@@ -126,7 +126,7 @@ Provide a complete advisory response following the structure defined in your sys
         if not matches:
             yield {"type": "error", "message": f"No prompt template found for question {question_id}"}
             return
-        with open(matches[0]) as f:
+        with open(matches[0], encoding='utf-8') as f:
             template = yaml.safe_load(f)
         async for event in self._run_query_stream(
             template["question_text"], template.get("prompt_additions", ""), is_preset=True

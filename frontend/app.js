@@ -93,13 +93,13 @@ async function loadQuote() {
 // ─── Config Status ─────────────────────────────────────────────────────────────
 
 const SECTION_INFO = {
-  profile:        'Profile',
-  compute:        'Compute',
-  storage_media:  'Storage',
+  profile: 'Profile',
+  compute: 'Compute',
+  storage_media: 'Storage',
   storage_config: 'RAID',
-  network:        'Network',
-  veeam:          'Veeam',
-  environment:    'Env',
+  network: 'Network',
+  veeam: 'Veeam',
+  environment: 'Env',
 };
 
 function renderConfigStatus(data) {
@@ -203,7 +203,7 @@ async function streamAsk(body, thinkingId) {
     }
 
     const reader = res.body.getReader();
-    const decoder = new TextDecoder();
+    const decoder = new TextDecoder('utf-8');
     let buffer = '';
     let msgId = null;
     let fullText = '';
@@ -442,7 +442,7 @@ function scrollToBottom() {
 // ─── Clear Session ─────────────────────────────────────────────────────────────
 
 async function clearSession() {
-  try { await fetch(`${API_BASE}/api/clear`, { method: 'POST' }); } catch (_) {}
+  try { await fetch(`${API_BASE}/api/clear`, { method: 'POST' }); } catch (_) { }
 
   state.quoteLoaded = false;
   state.quoteNumber = null;
@@ -471,33 +471,60 @@ function formatResponse(text) {
   // \( ... \) inline math → extract inner content
   text = text.replace(/\\\((.+?)\\\)/gs, (_, inner) =>
     inner.replace(/\\,/g, ' ').replace(/\\text\{(.+?)\}/g, '$1')
-         .replace(/\\times/g, '×').replace(/\\div/g, '÷')
-         .replace(/\\frac\{(.+?)\}\{(.+?)\}/g, '($1) / ($2)')
-         .replace(/\\_/g, '_').replace(/\s+/g, ' ').trim()
+      .replace(/\\times/g, '×').replace(/\\div/g, '÷')
+      .replace(/\\frac\{(.+?)\}\{(.+?)\}/g, '($1) / ($2)')
+      .replace(/\\_/g, '_').replace(/\s+/g, ' ').trim()
   );
   // \[ ... \] block math → same treatment
   text = text.replace(/\\\[(.+?)\\\]/gs, (_, inner) =>
     inner.replace(/\\,/g, ' ').replace(/\\text\{(.+?)\}/g, '$1')
-         .replace(/\\times/g, '×').replace(/\\div/g, '÷')
-         .replace(/\\frac\{(.+?)\}\{(.+?)\}/g, '($1) / ($2)')
-         .replace(/\s+/g, ' ').trim()
+      .replace(/\\times/g, '×').replace(/\\div/g, '÷')
+      .replace(/\\frac\{(.+?)\}\{(.+?)\}/g, '($1) / ($2)')
+      .replace(/\s+/g, ' ').trim()
   );
 
-  // Normalize Unicode characters to ASCII-safe equivalents BEFORE escaping.
-  // Use \uXXXX sequences (pure ASCII in source) so file encoding can never corrupt these.
+  // ── Mojibake recovery ──────────────────────────────────────────────────
+  // If UTF-8 bytes were decoded as Windows-1252/Latin-1, these byte
+  // patterns appear. We repair them BEFORE any other processing.
   text = text
-    .replace(/\u00d7/g, 'x')          // × multiplication sign
-    .replace(/\u00f7/g, '/')           // ÷ division sign
-    .replace(/\u2014/g, ' - ')         // — em dash
-    .replace(/\u2013/g, '-')           // – en dash
-    .replace(/\u2248/g, '~')           // ≈ approximately equal
-    .replace(/\u2265/g, '>=')          // ≥ greater or equal
-    .replace(/\u2264/g, '<=')          // ≤ less or equal
-    .replace(/\u00b1/g, '+/-')         // ± plus/minus
-    .replace(/\u2192/g, '->')          // → right arrow
-    .replace(/\u2026/g, '...')         // … ellipsis
+    .replace(/\u00c3\u0097/g, '\u00d7')    // Ã— → × (multiplication sign)
+    .replace(/\u00c3\u00b7/g, '\u00f7')    // Ã· → ÷ (division sign)
+    .replace(/\u00c3\u2014/g, '\u00d7')    // Ã— alt form
+    .replace(/\u00e2\u0080\u0094/g, '\u2014') // â€" → — (em dash)
+    .replace(/\u00e2\u0080\u0093/g, '\u2013') // â€" → – (en dash)
+    .replace(/\u00e2\u0080\u00a2/g, '\u2022') // â€¢ → • (bullet)
+    .replace(/\u00e2\u0080\u0099/g, '\u2019') // â€™ → ' (right single quote)
+    .replace(/\u00e2\u0080\u009c/g, '\u201c') // â€œ → " (left double quote)
+    .replace(/\u00e2\u0080\u009d/g, '\u201d') // â€ → " (right double quote)
+    .replace(/\u00e2\u0089\u0088/g, '\u2248') // â‰ˆ → ≈ (approximately)
+    .replace(/\u00e2\u0089\u00a5/g, '\u2265') // â‰¥ → ≥ (greater or equal)
+    .replace(/\u00e2\u0089\u00a4/g, '\u2264') // â‰¤ → ≤ (less or equal)
+    .replace(/\u00c2\u00b1/g, '\u00b1')    // Â± → ± (plus/minus)
+    .replace(/\u00e2\u0086\u0092/g, '\u2192') // â†' → → (right arrow)
+    .replace(/\u00e2\u0080\u00a6/g, '\u2026') // â€¦ → … (ellipsis)
+    .replace(/\u00c2\u00a0/g, ' ');         // Â  → non-breaking space
+
+  // Also repair common text-level mojibake patterns (regex-based fallback)
+  text = text
+    .replace(/Ã\u0097/g, '×')
+    .replace(/Ã\u00b7/g, '÷')
+    .replace(/â€"/g, '—')
+    .replace(/â€"/g, '–')
+    .replace(/â€™/g, "'")
+    .replace(/â€œ/g, '"')
+    .replace(/â€\u009d/g, '"')
+    .replace(/Â±/g, '±')
+    .replace(/â‰¥/g, '≥')
+    .replace(/â‰¤/g, '≤')
+    .replace(/â‰ˆ/g, '≈')
+    .replace(/â†'/g, '→')
+    .replace(/â€¦/g, '…')
+    .replace(/Â /g, ' ');
+
+  // Normalize display: keep Unicode symbols readable but consistent
+  text = text
     .replace(/[\u2018\u2019]/g, "'")   // curly single quotes → straight
-    .replace(/[\u201c\u201d]/g, '"');  // curly double quotes → straight
+    .replace(/[\u201c\u201d]/g, '"');   // curly double quotes → straight
 
   let html = escapeHtml(text);
 
@@ -575,7 +602,7 @@ function setLoadingBtn(loading) {
 function setCustomBtnLoading(loading) {
   $('custom-btn').disabled = loading;
   if (loading) { showEl('custom-spinner'); hideEl('send-icon'); }
-  else         { hideEl('custom-spinner'); showEl('send-icon'); }
+  else { hideEl('custom-spinner'); showEl('send-icon'); }
 }
 
 function shakeQuoteInput() {

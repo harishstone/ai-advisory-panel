@@ -148,11 +148,11 @@ async def ask_question_stream(req: AskQuestionRequest):
 
     async def event_generator():
         async for event in gen:
-            yield f"data: {json.dumps(event)}\n\n"
+            yield f"data: {json.dumps(event, ensure_ascii=True)}\n\n"
 
     return StreamingResponse(
         event_generator(),
-        media_type="text/event-stream",
+        media_type="text/event-stream; charset=utf-8",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
     )
 

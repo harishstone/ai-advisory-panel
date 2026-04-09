@@ -483,21 +483,23 @@ function formatResponse(text) {
          .replace(/\s+/g, ' ').trim()
   );
 
-  let html = escapeHtml(text);
+  // Normalize Unicode characters to ASCII-safe equivalents BEFORE escaping.
+  // Use \uXXXX sequences (pure ASCII in source) so file encoding can never corrupt these.
+  text = text
+    .replace(/\u00d7/g, 'x')          // × multiplication sign
+    .replace(/\u00f7/g, '/')           // ÷ division sign
+    .replace(/\u2014/g, ' - ')         // — em dash
+    .replace(/\u2013/g, '-')           // – en dash
+    .replace(/\u2248/g, '~')           // ≈ approximately equal
+    .replace(/\u2265/g, '>=')          // ≥ greater or equal
+    .replace(/\u2264/g, '<=')          // ≤ less or equal
+    .replace(/\u00b1/g, '+/-')         // ± plus/minus
+    .replace(/\u2192/g, '->')          // → right arrow
+    .replace(/\u2026/g, '...')         // … ellipsis
+    .replace(/[\u2018\u2019]/g, "'")   // curly single quotes → straight
+    .replace(/[\u201c\u201d]/g, '"');  // curly double quotes → straight
 
-  // Replace Unicode characters with HTML entities to prevent encoding display issues
-  html = html
-    // Math symbols
-    .replace(/×/g, '&times;').replace(/÷/g, '&divide;')
-    .replace(/≈/g, '&asymp;').replace(/≥/g, '&ge;').replace(/≤/g, '&le;')
-    .replace(/±/g, '&plusmn;').replace(/→/g, '&rarr;')
-    // Dashes
-    .replace(/—/g, '&mdash;').replace(/–/g, '&ndash;')
-    // Curly quotes → straight quotes
-    .replace(/\u2018|\u2019/g, "'")
-    .replace(/\u201C|\u201D/g, '"')
-    // Ellipsis
-    .replace(/…/g, '&hellip;');
+  let html = escapeHtml(text);
 
   // Tables — must run before newline processing
   html = html.replace(/((?:\|[^\n]+\|\n?){2,})/g, (match) => {

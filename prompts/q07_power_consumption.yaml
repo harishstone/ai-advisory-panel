@@ -31,7 +31,7 @@ prompt_additions: >
   - 12-bay (2U, AIC RSC-2ET):        800W PSU (1+1 redundant)
   - 16-bay (4U, AIC RSC-3ET):        800W PSU (1+1 redundant)
   - 24-bay (4U, AIC RSC-4ET):       1200W PSU (1+1 redundant)
-  - 36-bay (4U, Chenbro RM41736H):  PSU rating not confirmed — estimate from components
+  - 36-bay (4U, Chenbro RM41736 Plus): 1200W CRPS PSU (1+1 redundant)
   - 60-bay (4U, AIC RSC-4H1):       1600W PSU (1+1 redundant)
 
   Calculation steps:

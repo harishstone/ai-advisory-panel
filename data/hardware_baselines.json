@@ -144,7 +144,7 @@
     "12bay_2u": { "psu_w": 800,  "psu_redundancy": "1+1", "psu_efficiency": "80+ Platinum/Titanium", "model": "AIC RSC-2ET", "note": "550W also available; 800W is typical config" },
     "16bay_4u": { "psu_w": 800,  "psu_redundancy": "1+1", "psu_efficiency": "80+ Platinum", "model": "AIC RSC-3ET", "note": "1200W available for high-density configs" },
     "24bay_4u": { "psu_w": 1200, "psu_redundancy": "1+1", "psu_efficiency": "80+ Platinum", "model": "AIC RSC-4ET" },
-    "36bay_4u": { "psu_w": null, "model": "Chenbro RM41736H", "note": "Datasheet unavailable — estimate based on drive count" },
+    "36bay_4u": { "psu_w": 1200, "psu_redundancy": "1+1 CRPS", "psu_efficiency": "80+ Platinum", "model": "Chenbro RM41736 Plus (RM41736H20*14819)" },
     "60bay_4u": { "psu_w": 1600, "psu_redundancy": "1+1", "psu_efficiency": "80+ Platinum", "model": "AIC RSC-4H1 / J4060-04-35X", "note": "800W (2+2) or 1600W (1+1) options; use 1600W for full 60-drive population" }
   },
   "dedup_ratios": {

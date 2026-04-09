@@ -26,7 +26,7 @@ prompt_additions: >
   - 12-bay (2U): 800W PSU  → typical system peak ~500-650W
   - 16-bay (4U): 800W PSU  → typical system peak ~500-650W
   - 24-bay (4U): 1200W PSU → typical system peak ~750-950W
-  - 36-bay (4U): unknown   → estimate from components
+  - 36-bay (4U): 1200W CRPS PSU → typical system peak ~750-950W
   - 60-bay (4U): 1600W PSU → typical system peak ~1000-1300W
 
   Start from the peak power estimate (calculated the same way as Q7).

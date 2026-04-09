@@ -23,28 +23,42 @@ prompt_additions: >
   The user wants an estimated power consumption figure for their appliance.
 
   Use power_baselines_watts from hardware_baselines for per-component estimates.
+  Also reference chassis_psu_ratings_watts for the confirmed PSU capacity of this
+  specific chassis model.
+
+  Chassis PSU ratings (from AIC/Chenbro datasheets, confirmed by StoneFly):
+  - 8-bay  (2U, AIC RSC-2KT):        550W PSU (1+1 redundant)
+  - 12-bay (2U, AIC RSC-2ET):        800W PSU (1+1 redundant)
+  - 16-bay (4U, AIC RSC-3ET):        800W PSU (1+1 redundant)
+  - 24-bay (4U, AIC RSC-4ET):       1200W PSU (1+1 redundant)
+  - 36-bay (4U, Chenbro RM41736H):  PSU rating not confirmed — estimate from components
+  - 60-bay (4U, AIC RSC-4H1):       1600W PSU (1+1 redundant)
 
   Calculation steps:
   1. Storage power:
-     - HDD: primary_disk_count * per_sas_hdd (10W)
-     - SSD: primary_disk_count * per_ssd (5W)
-     - NVMe: primary_disk_count * per_nvme (8W)
+     - HDD: primary_disk_count × per_sas_hdd (10W each)
+     - SSD: primary_disk_count × per_ssd (5W each)
+     - NVMe: primary_disk_count × per_nvme (8W each)
      - Fast tier (if applicable): add separately
   2. Compute power (if hyperconverged or backup DR):
-     - CPU: total_physical_cores * per_cpu_core_tdp_w (8W)
-     - RAM: total_ram_gb * per_gb_ram (0.375W)
-  3. Platform overhead (motherboard, controller, fans, NIC):
-     - Estimate 80-120W for 1U/2U platforms, 150-200W for 4U platforms
-  4. Peak power = sum of all components / psu_efficiency (0.92)
-  5. Idle power = peak power * idle_multiplier (0.60)
-  6. Monthly kWh = peak_watts * 24 * 30 / 1000
+     - CPU: total_physical_cores × per_cpu_core_tdp_w (8W)
+     - RAM: total_ram_gb × per_gb_ram (0.375W)
+  3. Platform overhead (motherboard, controller, fans, NICs):
+     - 2U chassis (8-bay, 12-bay): 100-130W
+     - 4U chassis (16-bay, 36-bay, 60-bay): 150-200W
+  4. Peak system draw = sum of all components / psu_efficiency (0.92)
+  5. Cross-check: peak draw should be well below PSU capacity (PSU is rated higher
+     than actual draw for headroom — typical system uses 50-70% of PSU capacity)
+  6. Idle power = peak power × idle_multiplier (0.60)
+  7. Monthly kWh = peak_watts × 24 × 30 / 1000
 
-  If dual PSU: each PSU handles 50% load normally; total draw is the same but
-  each PSU runs more efficiently at ~50% load.
+  All PSUs are 1+1 redundant — actual system draw is the same regardless of
+  redundancy (both PSUs share the load; total draw is not doubled).
 
   Provide:
   1. Idle power (W and kWh/month)
-  2. Peak power (W and kWh/month)
+  2. Peak power under full I/O load (W and kWh/month)
   3. Annual energy cost estimate at $0.12/kWh
-  4. Heat dissipation in BTU/hr (watts * 3.412)
-  5. Note: these are estimates — actual draw depends on chassis model and workload mix
+  4. Heat dissipation in BTU/hr (watts × 3.412)
+  5. PSU capacity for this chassis model (from confirmed specs above)
+  6. Note: actual draw varies with workload — these are engineering estimates

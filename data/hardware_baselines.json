@@ -127,10 +127,25 @@
     "idle_multiplier": 0.60
   },
   "rack_units": {
-    "1u": 1,
-    "2u": 2,
-    "4u": 4,
-    "note": "StoneFly appliances are typically 1U-4U. Exact U count depends on chassis model."
+    "by_bay_count": {
+      "8":  { "u": 2, "source": "Confirmed by StoneFly", "chassis_vendor": "AIC", "chassis_model": "RSC-2KT" },
+      "12": { "u": 2, "source": "Confirmed by StoneFly", "chassis_vendor": "AIC", "chassis_model": "RSC-2ET" },
+      "16": { "u": 4, "source": "Confirmed by StoneFly", "chassis_vendor": "AIC", "chassis_model": "RSC-3ET" },
+      "24": { "u": 4, "source": "AIC datasheet", "chassis_vendor": "AIC", "chassis_model": "RSC-4ET" },
+      "36": { "u": 4, "source": "Confirmed by StoneFly", "chassis_vendor": "Chenbro", "chassis_model": "RM41736H" },
+      "60": { "u": 4, "source": "Confirmed by StoneFly", "chassis_vendor": "AIC", "chassis_model": "RSC-4H1 or J4060-04-35X" }
+    },
+    "note": "8-bay and 12-bay = 2U; 16-bay, 36-bay, 60-bay = 4U (confirmed by StoneFly)"
+  },
+  "chassis_psu_ratings_watts": {
+    "_note": "PSU capacity ratings from AIC/Chenbro datasheets. Actual system draw is lower — depends on drive population, CPU, and workload. Use platform_overhead for power estimates.",
+    "_source": "AIC/Chenbro product pages, confirmed by StoneFly, April 2026",
+    "8bay_2u":  { "psu_w": 550,  "psu_redundancy": "1+1", "psu_efficiency": "80+ Platinum", "model": "AIC RSC-2KT" },
+    "12bay_2u": { "psu_w": 800,  "psu_redundancy": "1+1", "psu_efficiency": "80+ Platinum/Titanium", "model": "AIC RSC-2ET", "note": "550W also available; 800W is typical config" },
+    "16bay_4u": { "psu_w": 800,  "psu_redundancy": "1+1", "psu_efficiency": "80+ Platinum", "model": "AIC RSC-3ET", "note": "1200W available for high-density configs" },
+    "24bay_4u": { "psu_w": 1200, "psu_redundancy": "1+1", "psu_efficiency": "80+ Platinum", "model": "AIC RSC-4ET" },
+    "36bay_4u": { "psu_w": null, "model": "Chenbro RM41736H", "note": "Datasheet unavailable — estimate based on drive count" },
+    "60bay_4u": { "psu_w": 1600, "psu_redundancy": "1+1", "psu_efficiency": "80+ Platinum", "model": "AIC RSC-4H1 / J4060-04-35X", "note": "800W (2+2) or 1600W (1+1) options; use 1600W for full 60-drive population" }
   },
   "dedup_ratios": {
     "veeam_backup_data": { "typical": 2.5, "best_case": 5.0, "worst_case": 1.2 },

@@ -18,24 +18,22 @@ context_fields_used:
 prompt_additions: >
   The user wants to know how many rack units (U) the appliance will occupy.
 
-  StoneFly chassis sizing guidelines (use these as reference):
-  - 1U chassis: typically holds up to 10x 2.5" drives or 4x 3.5" drives
-  - 2U chassis: typically holds 12-16x 3.5" drives or up to 24x 2.5" drives
-  - 4U chassis: typically holds 24-36x 3.5" LFF drives (large form factor)
+  CONFIRMED StoneFly chassis rack U values (confirmed by StoneFly):
+  - 8-bay  → 2U  (AIC RSC-2KT)
+  - 12-bay → 2U  (AIC RSC-2ET)
+  - 16-bay → 4U  (AIC RSC-3ET)
+  - 24-bay → 4U  (AIC RSC-4ET)
+  - 36-bay → 4U  (Chenbro RM41736H)
+  - 60-bay → 4U  (AIC RSC-4H1 or J4060-04-35X)
 
-  Determine chassis size based on drive count and type:
-  - <= 4x 3.5" drives: 1U
-  - 5-16x 3.5" drives: 2U
-  - 17-36x 3.5" drives: 4U
-  - SSD/NVMe: higher density, 2.5" — typically 2U for up to 24 drives
-
-  Note: these are generic estimates. The actual chassis depends on the specific
-  StoneFly model ordered. The exact U count should be confirmed against the
-  StoneFly product catalog for the specific SKU.
+  Use primary_disk_count from the quote config to identify the chassis and
+  give the exact confirmed U size — no need to estimate.
 
   Provide:
-  1. Estimated chassis size (U)
-  2. Drive density assumption used
-  3. Recommendation: confirm exact U count with StoneFly appliance datasheet
-  4. Additional rack space needed: 1U for top-of-rack switch if not already present,
-     patch panel considerations
+  1. Chassis U size (confirmed value from table above)
+  2. Chassis model (AIC or Chenbro, from table above)
+  3. Additional rack space to plan for:
+     - 1U for top-of-rack switch (if not already present)
+     - 1U per patch panel
+     - UPS (see Q9 for UPS sizing — typically 2-3U for rack-mount UPS)
+  4. Total recommended rack space reservation

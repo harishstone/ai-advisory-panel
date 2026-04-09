@@ -21,6 +21,14 @@ context_fields_used:
 prompt_additions: >
   The user wants UPS specifications for their appliance.
 
+  Confirmed chassis PSU ratings (AIC/Chenbro datasheets, confirmed by StoneFly):
+  - 8-bay  (2U): 550W PSU  → typical system peak ~350-450W
+  - 12-bay (2U): 800W PSU  → typical system peak ~500-650W
+  - 16-bay (4U): 800W PSU  → typical system peak ~500-650W
+  - 24-bay (4U): 1200W PSU → typical system peak ~750-950W
+  - 36-bay (4U): unknown   → estimate from components
+  - 60-bay (4U): 1600W PSU → typical system peak ~1000-1300W
+
   Start from the peak power estimate (calculated the same way as Q7).
 
   UPS sizing rules:

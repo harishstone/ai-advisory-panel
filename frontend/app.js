@@ -22,6 +22,23 @@ function showEl(id) { $(id).classList.remove('hidden'); }
 function hideEl(id) { $(id).classList.add('hidden'); }
 function setText(id, t) { $(id).textContent = t; }
 
+let sidebarOpen = false;
+function toggleSidebar() {
+  const sidebar = $('sidebar');
+  const overlay = $('mobile-overlay');
+  sidebarOpen = !sidebarOpen;
+
+  if (sidebarOpen) {
+    sidebar.classList.remove('-translate-x-full');
+    sidebar.classList.add('translate-x-0');
+    overlay.classList.remove('hidden');
+  } else {
+    sidebar.classList.remove('translate-x-0');
+    sidebar.classList.add('-translate-x-full');
+    overlay.classList.add('hidden');
+  }
+}
+
 // ─── Init ──────────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -81,6 +98,11 @@ async function loadQuote() {
     addSystemMessage(`Quote #${quoteNumber} loaded — ${data.sections_loaded.length} configuration sections available`);
     if (data.warnings && data.warnings.length > 0) {
       addWarningsBlock(data.warnings);
+    }
+
+    // Auto-close sidebar on mobile after successfully loading a quote
+    if (window.innerWidth < 768 && sidebarOpen) {
+      toggleSidebar();
     }
 
   } catch (err) {
@@ -158,6 +180,11 @@ async function askPreselected(questionId, buttonEl) {
   const questionText = buttonEl.querySelector('.q-text').textContent.trim();
   addUserMessage(questionText);
   const thinkingId = addThinkingMessage();
+
+  if (window.innerWidth < 768 && sidebarOpen) {
+    toggleSidebar();
+  }
+
   await streamAsk({ question_id: questionId }, thinkingId);
 }
 

@@ -362,29 +362,45 @@ function addSystemMessage(text) {
 }
 
 function addWarningsBlock(warnings) {
-  showChat();
-  const id = `warnings-${Date.now()}`;
+  // Remove any existing notice toast
+  const existing = document.getElementById('config-notices-toast');
+  if (existing) existing.remove();
+
+  const id = `warnings-body-${Date.now()}`;
   const items = warnings.map(w => `
-    <div class="flex gap-2 items-start mt-1.5">
-      <svg class="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+    <div class="flex gap-2 items-start">
+      <svg class="w-3 h-3 flex-shrink-0 mt-0.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
         <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
       </svg>
       <span>${escapeHtml(w)}</span>
     </div>
   `).join('');
-  appendToChat(`
-    <div class="flex justify-center message-in">
-      <div class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 max-w-[85%] leading-relaxed">
-        <button onclick="document.getElementById('${id}').classList.toggle('hidden')" class="flex items-center gap-1.5 font-semibold text-amber-800 w-full text-left">
+
+  const toast = document.createElement('div');
+  toast.id = 'config-notices-toast';
+  toast.style.cssText = 'position:fixed;top:16px;right:16px;z-index:9999;max-width:340px;';
+  toast.innerHTML = `
+    <div class="text-xs bg-amber-50 border border-amber-200 rounded-xl shadow-lg px-4 py-3 text-amber-800 leading-relaxed">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-1.5 font-semibold">
           <svg class="w-3.5 h-3.5 text-amber-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
           </svg>
-          ${warnings.length} config notice${warnings.length > 1 ? 's' : ''} for this quote — click to view
-        </button>
-        <div id="${id}" class="hidden space-y-0.5 mt-1">${items}</div>
+          ${warnings.length} config notice${warnings.length > 1 ? 's' : ''}
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <button onclick="document.getElementById('${id}').classList.toggle('hidden')" class="underline text-amber-700 hover:text-amber-900">View</button>
+          <button onclick="document.getElementById('config-notices-toast').remove()" class="text-amber-400 hover:text-amber-700 ml-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
       </div>
+      <div id="${id}" class="hidden mt-2 space-y-1.5 text-amber-700">${items}</div>
     </div>
-  `);
+  `;
+  document.body.appendChild(toast);
 }
 
 function addErrorMessage(text) {
@@ -442,6 +458,8 @@ async function clearSession() {
   $('messages-container').innerHTML = '';
   hideEl('messages-container');
   showEl('empty-state');
+  const toast = document.getElementById('config-notices-toast');
+  if (toast) toast.remove();
 }
 
 // ─── Response Formatter ────────────────────────────────────────────────────────

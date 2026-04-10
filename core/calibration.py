@@ -44,18 +44,16 @@ class CalibrationEngine:
             return
 
         if not net.dedicated_storage_network:
-            ctx["warnings"].append(
-                "Shared network (production + storage): expect 15-25% throughput "
-                "reduction during peak hours due to bandwidth contention."
+            ctx["assumptions"].append(
+                "Assuming dedicated storage network. If a shared (production + storage) network is used, "
+                "expect a 15-25% throughput reduction during peak hours due to bandwidth contention."
             )
-            ctx["degradation_factors"]["shared_network"] = 0.80
 
         if not net.jumbo_frames_mtu9000:
-            ctx["warnings"].append(
-                "Jumbo frames not confirmed. Standard MTU (1500) increases CPU overhead "
-                "for large sequential I/O and reduces NAS/iSCSI throughput by ~8-12%."
+            ctx["assumptions"].append(
+                "Assuming Jumbo Frames (MTU 9000) are explicitly configured on switches. If standard MTU (1500) remains, "
+                "expect higher CPU overhead and an 8-12% reduction in NAS/iSCSI throughput."
             )
-            ctx["degradation_factors"]["no_jumbo_frames"] = 0.90
 
         if net.bonding_mode in ("none", None):
             ctx["assumptions"].append(

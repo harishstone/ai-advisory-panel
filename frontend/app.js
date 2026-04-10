@@ -400,8 +400,8 @@ function finalizeStreamingBubble(id, fullText) {
 function addSystemMessage(text) {
   showChat();
   appendToChat(`
-    <div class="flex justify-center message-in">
-      <div class="text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-4 py-1.5">
+    <div class="flex justify-center message-in mb-4">
+      <div class="text-xs font-medium text-brand-700 bg-brand-50 border border-brand-200 rounded-full px-4 py-1.5 shadow-sm">
         ${escapeHtml(text)}
       </div>
     </div>

@@ -66,6 +66,21 @@ document.addEventListener('DOMContentLoaded', () => {
     textarea.style.height = 'auto';
     textarea.style.height = Math.min(textarea.scrollHeight, 140) + 'px';
   });
+
+  // Scroll visibility for the "Scroll Down" button
+  const chatMessages = $('chat-messages');
+  const scrollBtn = $('scroll-bottom-btn');
+
+  chatMessages.addEventListener('scroll', () => {
+    const isAtBottom = chatMessages.scrollHeight - chatMessages.scrollTop <= chatMessages.clientHeight + 100;
+    if (isAtBottom || chatMessages.scrollTop < 200) {
+      scrollBtn.classList.add('opacity-0', 'translate-y-4');
+      scrollBtn.classList.remove('opacity-100', 'translate-y-0');
+    } else {
+      scrollBtn.classList.remove('opacity-0', 'translate-y-4');
+      scrollBtn.classList.add('opacity-100', 'translate-y-0');
+    }
+  });
 });
 
 // ─── Load Quote ────────────────────────────────────────────────────────────────
@@ -186,11 +201,11 @@ function renderQuestionList(questions) {
   if (preview) {
     preview.innerHTML = questions.slice(0, 4).map(q => `
       <button onclick="askPreselected(${q.id})" 
-        class="text-left p-4 bg-gray-50 border border-gray-100 rounded-2xl hover:border-brand-200 hover:bg-white hover:shadow-lg hover:shadow-brand-600/5 transition-all group flex items-center gap-5 w-full">
+        class="text-left p-2.5 px-4 bg-gray-50 border border-gray-100 rounded-2xl hover:border-brand-200 hover:bg-white hover:shadow-lg hover:shadow-brand-600/5 transition-all group flex items-center gap-4 w-full">
         <div class="flex-shrink-0">
-          <span class="w-9 h-9 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 group-hover:text-brand-600 font-bold text-xs">${q.id}</span>
+          <span class="w-8 h-8 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 group-hover:text-brand-600 font-bold text-xs">${q.id}</span>
         </div>
-        <p class="text-gray-600 text-[14px] font-medium leading-normal group-hover:text-gray-900 flex-1">${escapeHtml(q.text)}</p>
+        <p class="text-gray-600 text-[13px] font-medium leading-tight group-hover:text-gray-900 flex-1">${escapeHtml(q.text)}</p>
         <div class="flex-shrink-0 p-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0 bg-brand-50 rounded-lg">
            <svg class="w-4 h-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
              <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -335,11 +350,15 @@ function addUserMessage(text) {
           ${escapeHtml(text)}
         </div>
         <div class="flex items-center justify-end mt-1 px-1 gap-1">
-          <button onclick="editMessage(this)" class="p-1 text-gray-400 hover:text-gray-600 rounded transition-colors" title="Edit">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+          <button onclick="editMessage(this)" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-black/5 rounded-md transition-all flex items-center justify-center" title="Edit">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+            </svg>
           </button>
-          <button onclick="copyMessage(this)" class="p-1 text-gray-400 hover:text-gray-600 rounded transition-colors" title="Copy">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+          <button onclick="copyMessage(this)" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-black/5 rounded-md transition-all flex items-center justify-center" title="Copy">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 8.25V6a2.25 2.25 0 0 0-2.25-2.25H6A2.25 2.25 0 0 0 3.75 6v8.25A2.25 2.25 0 0 0 6 16.5h2.25m8.25-8.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-7.5A2.25 2.25 0 0 1 8.25 18v-1.5m8.25-8.25h-6a2.25 2.25 0 0 0-2.25 2.25v6" />
+            </svg>
           </button>
         </div>
       </div>
@@ -382,15 +401,17 @@ function addAssistantMessage(data) {
   `).join('');
 
   appendToChat(`
-    <div class="flex message-in">
+    <div class="flex message-in py-6 group">
       <div class="flex-1 min-w-0">
         ${warningsHTML}
-        <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-5 py-4 shadow-sm prose-response message-content">
+        <div class="prose-response message-content text-gray-800 leading-relaxed max-w-none">
           ${formatResponse(data.response)}
         </div>
-        <div class="flex items-center justify-start mt-1 px-1">
-          <button onclick="copyMessage(this)" class="p-1 text-gray-400 hover:text-gray-600 rounded transition-colors" title="Copy">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+        <div class="flex items-center justify-start mt-2 px-0 opacity-0 group-hover:opacity-100 transition-all">
+          <button onclick="copyMessage(this)" class="p-1.5 text-gray-400 hover:text-brand-600 hover:bg-brand-50 rounded-md transition-all flex items-center justify-center" title="Copy">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 8.25V6a2.25 2.25 0 0 0-2.25-2.25H6A2.25 2.25 0 0 0 3.75 6v8.25A2.25 2.25 0 0 0 6 16.5h2.25m8.25-8.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-7.5A2.25 2.25 0 0 1 8.25 18v-1.5m8.25-8.25h-6a2.25 2.25 0 0 0-2.25 2.25v6" />
+            </svg>
           </button>
         </div>
       </div>
@@ -412,15 +433,17 @@ function createStreamingBubble(warnings = []) {
   `).join('');
 
   appendToChat(`
-    <div class="flex message-in" id="${id}">
+    <div class="flex message-in py-6 group" id="${id}">
       <div class="flex-1 min-w-0">
         ${warningsHTML}
-        <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-5 py-4 shadow-sm prose-response message-content" id="${id}-body">
+        <div class="prose-response message-content text-gray-800 leading-relaxed" id="${id}-body">
           <span id="${id}-text" class="streaming-text"></span>
         </div>
-        <div class="flex items-center justify-start mt-1 px-1">
-          <button onclick="copyMessage(this)" class="p-1 text-gray-400 hover:text-gray-600 rounded transition-colors" title="Copy">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+        <div class="flex items-center justify-start mt-2 px-0 opacity-0 group-hover:opacity-100 transition-all">
+          <button onclick="copyMessage(this)" class="p-1.5 text-gray-400 hover:text-brand-600 hover:bg-brand-50 rounded-md transition-all flex items-center justify-center" title="Copy">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 8.25V6a2.25 2.25 0 0 0-2.25-2.25H6A2.25 2.25 0 0 0 3.75 6v8.25A2.25 2.25 0 0 0 6 16.5h2.25m8.25-8.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-7.5A2.25 2.25 0 0 1 8.25 18v-1.5m8.25-8.25h-6a2.25 2.25 0 0 0-2.25 2.25v6" />
+            </svg>
           </button>
         </div>
       </div>
@@ -510,7 +533,7 @@ function addErrorMessage(text) {
 // ─── Chat Helpers ──────────────────────────────────────────────────────────────
 
 function appendToChat(html, id = null) {
-  const container = $('messages-container');
+  const container = $('chat-messages-inner');
   const wrapper = document.createElement('div');
   wrapper.innerHTML = html.trim();
   const el = wrapper.firstElementChild;
@@ -544,10 +567,18 @@ async function clearSession() {
   $('quote-input').value = '';
   hideEl('config-status');
   hideEl('quote-error');
+  $('config-chips').innerHTML = '';
+
+  const badge = $('empty-state-badge');
+  if (badge) {
+    badge.textContent = 'Load a Quote Number to begin analysis';
+    badge.classList.add('bg-gray-50', 'text-gray-400', 'border-gray-200/50');
+    badge.classList.remove('bg-brand-50', 'text-brand-700', 'border-brand-100');
+  }
 
   document.querySelectorAll('.q-btn').forEach(btn => btn.classList.remove('q-btn-active'));
 
-  $('messages-container').innerHTML = '';
+  $('chat-messages-inner').innerHTML = '';
   hideEl('messages-container');
   hideEl('presets-library');
   showEl('empty-state');
@@ -798,4 +829,66 @@ function showLibraryToast(msg) {
   `;
   document.body.appendChild(toast);
   setTimeout(() => { if (toast.parentNode) toast.remove(); }, 4000);
+}
+
+let recognition = null;
+function toggleVoiceInput() {
+  const micBtn = $('mic-btn');
+  const input = $('custom-input');
+
+  if (!('webkitSpeechRecognition' in window)) {
+    showLibraryToast('Speech recognition not supported in this browser.');
+    return;
+  }
+
+  if (recognition && recognition.isStarted) {
+    recognition.stop();
+    return;
+  }
+
+  if (!recognition) {
+    recognition = new webkitSpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+      recognition.isStarted = true;
+      micBtn.classList.add('text-red-500', 'animate-pulse');
+      micBtn.classList.remove('text-gray-400', 'hover:text-brand-600');
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      const start = input.selectionStart;
+      const end = input.selectionEnd;
+      const val = input.value;
+      input.value = val.slice(0, start) + transcript + val.slice(end);
+      input.setSelectionRange(start + transcript.length, start + transcript.length);
+      input.focus();
+      // Trigger auto-resize
+      input.style.height = 'auto';
+      input.style.height = (input.scrollHeight) + 'px';
+    };
+
+    recognition.onerror = () => {
+      stopMic();
+    };
+
+    recognition.onend = () => {
+      stopMic();
+    };
+
+    function stopMic() {
+      recognition.isStarted = false;
+      micBtn.classList.remove('text-red-500', 'animate-pulse');
+      micBtn.classList.add('text-gray-400', 'hover:text-brand-600');
+    }
+  }
+
+  try {
+    recognition.start();
+  } catch (e) {
+    console.warn('Recognition start failed:', e);
+  }
 }

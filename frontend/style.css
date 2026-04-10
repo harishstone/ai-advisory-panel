@@ -438,3 +438,21 @@
 #custom-input::-webkit-scrollbar {
   display: none;
 }
+
+/* ─── Scrollbar ────────────────────────────────────────────────────────────── */
+#chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+#chat-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#chat-messages::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 10px;
+}
+
+#chat-messages::-webkit-scrollbar-thumb:hover {
+  background: #d1d5db;
+}

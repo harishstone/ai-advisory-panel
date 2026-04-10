@@ -284,13 +284,16 @@ async function streamAsk(body, thinkingId) {
 function addUserMessage(text) {
   showChat();
   appendToChat(`
-    <div class="flex justify-end message-in group">
+    <div class="flex justify-end message-in">
       <div class="max-w-[75%]">
         <div class="bg-brand-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm leading-relaxed shadow-sm message-content">
           ${escapeHtml(text)}
         </div>
-        <div class="flex items-center justify-end mt-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onclick="copyMessage(this)" class="p-1 text-gray-400 hover:text-gray-600 rounded" title="Copy">
+        <div class="flex items-center justify-end mt-1 px-1 gap-1">
+          <button onclick="editMessage(this)" class="p-1 text-gray-400 hover:text-gray-600 rounded transition-colors" title="Edit">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+          </button>
+          <button onclick="copyMessage(this)" class="p-1 text-gray-400 hover:text-gray-600 rounded transition-colors" title="Copy">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
           </button>
         </div>
@@ -334,14 +337,14 @@ function addAssistantMessage(data) {
   `).join('');
 
   appendToChat(`
-    <div class="flex message-in group">
+    <div class="flex message-in">
       <div class="flex-1 min-w-0">
         ${warningsHTML}
         <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-5 py-4 shadow-sm prose-response message-content">
           ${formatResponse(data.response)}
         </div>
-        <div class="flex items-center justify-start mt-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onclick="copyMessage(this)" class="p-1 text-gray-400 hover:text-gray-600 rounded" title="Copy">
+        <div class="flex items-center justify-start mt-1 px-1">
+          <button onclick="copyMessage(this)" class="p-1 text-gray-400 hover:text-gray-600 rounded transition-colors" title="Copy">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
           </button>
         </div>
@@ -364,14 +367,14 @@ function createStreamingBubble(warnings = []) {
   `).join('');
 
   appendToChat(`
-    <div class="flex message-in group" id="${id}">
+    <div class="flex message-in" id="${id}">
       <div class="flex-1 min-w-0">
         ${warningsHTML}
         <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-5 py-4 shadow-sm prose-response message-content" id="${id}-body">
           <span id="${id}-text" class="streaming-text"></span>
         </div>
-        <div class="flex items-center justify-start mt-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onclick="copyMessage(this)" class="p-1 text-gray-400 hover:text-gray-600 rounded" title="Copy">
+        <div class="flex items-center justify-start mt-1 px-1">
+          <button onclick="copyMessage(this)" class="p-1 text-gray-400 hover:text-gray-600 rounded transition-colors" title="Copy">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
           </button>
         </div>
@@ -670,4 +673,66 @@ async function copyMessage(btn) {
   } catch (err) {
     console.error('Failed to copy', err);
   }
+}
+
+function editMessage(btn) {
+  const container = btn.closest('.message-in');
+  const innerWrap = container.children[0];
+  const contentEl = innerWrap.querySelector('.message-content');
+  if (!contentEl) return;
+  const originalText = contentEl.innerText.trim();
+
+  const originalHTML = innerWrap.innerHTML;
+  const originalClasses = innerWrap.className;
+
+  innerWrap.className = "w-full max-w-full mb-2";
+
+  innerWrap.innerHTML = `
+    <div class="bg-gray-50 border border-gray-300 rounded-2xl p-3 shadow-inner w-full">
+      <textarea class="w-full bg-transparent border-none focus:outline-none resize-y text-sm text-gray-800" rows="3">${escapeHtml(originalText)}</textarea>
+      <div class="flex justify-end gap-2 mt-2">
+        <button class="cancel-btn px-4 py-1.5 text-xs text-gray-600 bg-gray-200 hover:bg-gray-300 rounded-full transition-colors font-medium">Cancel</button>
+        <button class="save-btn px-4 py-1.5 text-xs text-white bg-brand-600 hover:bg-brand-500 rounded-full shadow-sm transition-colors font-medium">Save & Submit</button>
+      </div>
+    </div>
+  `;
+
+  const textarea = innerWrap.querySelector('textarea');
+  textarea.focus();
+  textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+
+  innerWrap.querySelector('.cancel-btn').onclick = () => {
+    innerWrap.className = originalClasses;
+    innerWrap.innerHTML = originalHTML;
+  };
+
+  innerWrap.querySelector('.save-btn').onclick = async () => {
+    const newText = textarea.value.trim();
+    if (!newText) {
+      // Just cancel if empty
+      innerWrap.className = originalClasses;
+      innerWrap.innerHTML = originalHTML;
+      return;
+    }
+
+    // Wipe all messages originating after this one to simulate chat history rollback
+    let nextNode = container.nextElementSibling;
+    while (nextNode) {
+      const toRemove = nextNode;
+      nextNode = nextNode.nextElementSibling;
+      toRemove.remove();
+    }
+
+    // Restore the bubble structural shell with the updated text
+    innerWrap.className = originalClasses;
+    innerWrap.innerHTML = originalHTML;
+    innerWrap.querySelector('.message-content').innerHTML = escapeHtml(newText);
+
+    // Resume standard querying loop
+    if (state.isThinking) return;
+    const thinkingId = addThinkingMessage();
+    setCustomBtnLoading(true);
+    await streamAsk({ custom_question: newText }, thinkingId);
+    setCustomBtnLoading(false);
+  };
 }

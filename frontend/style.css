@@ -139,13 +139,23 @@
 }
 
 .config-chip-on {
-  background: rgba(37, 99, 235, 0.18);
-  color: #93c5fd;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #dbeafe;
 }
 
 .config-chip-off {
-  background: rgba(75, 85, 99, 0.25);
-  color: #4b5563;
+  background: #f9fafb;
+  color: #9ca3af;
+  border: 1px solid #f3f4f6;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
 }
 
 /* ─── Sidebar Question Buttons ─────────────────────────────────────────────── */
@@ -326,6 +336,7 @@
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -378,6 +389,52 @@
   display: none;
 }
 
+/* ─── Sidebar Toggle (Desktop GPT-Style) ───────────────────────────────────────── */
+
+@media (min-width: 1024px) {
+  #sidebar.collapsed {
+    width: 4rem !important;
+    min-width: 4rem !important;
+  }
+
+  #sidebar.collapsed .nav-label {
+    opacity: 0 !important;
+    visibility: hidden;
+    width: 0;
+    pointer-events: none;
+    transition: opacity 0.05s ease-out;
+  }
+}
+
+#sidebar {
+  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-label {
+  transition: opacity 0.15s ease-in;
+  white-space: nowrap;
+}
+
+#sidebar:not(.collapsed) .nav-label {
+  opacity: 1;
+  transition: opacity 0.3s ease-in 0.1s;
+}
+
+#sidebar button {
+  justify-content: flex-start !important;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+#sidebar button svg,
+#sidebar button div {
+  flex-shrink: 0;
+}
+
 #custom-input {
   scrollbar-width: none;
+}
+
+#custom-input::-webkit-scrollbar {
+  display: none;
 }

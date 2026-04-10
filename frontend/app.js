@@ -13,6 +13,7 @@ const state = {
   quoteNumber: null,
   activeQuestionId: null,
   isThinking: false,
+  currentQuestions: [],
 };
 
 // ─── DOM Helpers ───────────────────────────────────────────────────────────────
@@ -22,19 +23,20 @@ function showEl(id) { $(id).classList.remove('hidden'); }
 function hideEl(id) { $(id).classList.add('hidden'); }
 function setText(id, t) { $(id).textContent = t; }
 
-let sidebarOpen = false;
+let sidebarOpen = window.innerWidth >= 1024; // Default to open on desktop
 function toggleSidebar() {
   const sidebar = $('sidebar');
   const overlay = $('mobile-overlay');
+
   sidebarOpen = !sidebarOpen;
 
   if (sidebarOpen) {
-    sidebar.classList.remove('-translate-x-full');
+    sidebar.classList.remove('-translate-x-full', 'collapsed');
     sidebar.classList.add('translate-x-0');
-    overlay.classList.remove('hidden');
+    if (window.innerWidth < 1024) overlay.classList.remove('hidden');
   } else {
+    sidebar.classList.add('-translate-x-full', 'collapsed');
     sidebar.classList.remove('translate-x-0');
-    sidebar.classList.add('-translate-x-full');
     overlay.classList.add('hidden');
   }
 }
@@ -95,7 +97,16 @@ async function loadQuote() {
     state.quoteLoaded = true;
     state.quoteNumber = quoteNumber;
     renderConfigStatus(data);
-    addSystemMessage(`Quote #${quoteNumber} loaded — ${data.sections_loaded.length} configuration sections available`);
+
+    const badge = $('empty-state-badge');
+    if (badge) {
+      badge.textContent = `Quote #${quoteNumber} Loaded — Choose a preset below`;
+      badge.classList.remove('bg-gray-50', 'text-gray-500', 'border-gray-200/50');
+      badge.classList.add('bg-brand-50', 'text-brand-700', 'border-brand-100');
+    } else {
+      addSystemMessage(`Quote #${quoteNumber} loaded — ${data.sections_loaded.length} configuration sections available`);
+    }
+
     if (data.warnings && data.warnings.length > 0) {
       addWarningsBlock(data.warnings);
     }
@@ -149,36 +160,70 @@ async function loadQuestionList() {
 }
 
 function renderQuestionList(questions) {
-  $('questions-list').innerHTML = questions.map(q => `
-    <button
-      class="q-btn w-full text-left px-2 py-2 rounded-lg transition-colors"
-      data-id="${q.id}"
-      onclick="askPreselected(${q.id}, this)"
-    >
-      <div class="flex items-start gap-2">
-        <span class="q-num flex-shrink-0 w-6 h-5 rounded text-xs font-bold flex items-center justify-center mt-0.5">${q.id}</span>
-        <span class="q-text text-xs leading-snug line-clamp-2">${escapeHtml(q.text)}</span>
-      </div>
-    </button>
-  `).join('');
+  state.currentQuestions = questions;
+
+  // 1. Full Gallery (Library)
+  const grid = $('library-grid');
+  if (grid) {
+    grid.innerHTML = questions.map(q => `
+      <button onclick="askPreselected(${q.id})" 
+        class="text-left p-6 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 hover:border-brand-500/50 hover:shadow-2xl hover:shadow-brand-600/10 hover:-translate-x-1 transition-all group flex items-center gap-6 w-full">
+        <div class="flex-shrink-0">
+          <span class="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-gray-400 group-hover:bg-brand-600 group-hover:text-white transition-all font-bold text-base shadow-inner">${q.id}</span>
+        </div>
+        <p class="text-gray-200 text-lg font-medium leading-relaxed group-hover:text-white transition-colors flex-1">${escapeHtml(q.text)}</p>
+        <div class="flex-shrink-0 p-3 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0 bg-brand-600 rounded-xl shadow-lg shadow-brand-600/20">
+           <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+             <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+           </svg>
+        </div>
+      </button>
+    `).join('');
+  }
+
+  // 2. Dashboard Preview (First 4 items)
+  const preview = $('empty-state-presets');
+  if (preview) {
+    preview.innerHTML = questions.slice(0, 4).map(q => `
+      <button onclick="askPreselected(${q.id})" 
+        class="text-left p-4 bg-gray-50 border border-gray-100 rounded-2xl hover:border-brand-200 hover:bg-white hover:shadow-lg hover:shadow-brand-600/5 transition-all group flex items-center gap-5 w-full">
+        <div class="flex-shrink-0">
+          <span class="w-9 h-9 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 group-hover:text-brand-600 font-bold text-xs">${q.id}</span>
+        </div>
+        <p class="text-gray-600 text-[14px] font-medium leading-normal group-hover:text-gray-900 flex-1">${escapeHtml(q.text)}</p>
+        <div class="flex-shrink-0 p-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0 bg-brand-50 rounded-lg">
+           <svg class="w-4 h-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+             <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+           </svg>
+        </div>
+      </button>
+    `).join('');
+  }
+}
+
+function showPresetsLibrary() {
+  showEl('presets-library');
 }
 
 // ─── Ask Pre-selected ──────────────────────────────────────────────────────────
 
-async function askPreselected(questionId, buttonEl) {
+async function askPreselected(questionId) {
   if (!state.quoteLoaded) {
-    shakeQuoteInput();
-    showQuoteError('Load a quote first.');
+    showLibraryToast('Please load a quote number first to run analysis presets.');
     return;
   }
   if (state.isThinking) return;
 
-  document.querySelectorAll('.q-btn').forEach(btn => btn.classList.remove('q-btn-active'));
-  buttonEl.classList.add('q-btn-active');
+  hideEl('presets-library');
+  hideEl('empty-state');
+  showEl('messages-container');
+
   state.activeQuestionId = questionId;
 
-  const questionText = buttonEl.querySelector('.q-text').textContent.trim();
-  addUserMessage(questionText);
+  const q = state.currentQuestions.find(it => it.id === questionId);
+  if (!q) return;
+
+  addUserMessage(q.text);
   const thinkingId = addThinkingMessage();
 
   if (window.innerWidth < 768 && sidebarOpen) {
@@ -504,6 +549,7 @@ async function clearSession() {
 
   $('messages-container').innerHTML = '';
   hideEl('messages-container');
+  hideEl('presets-library');
   showEl('empty-state');
   const toast = document.getElementById('config-notices-toast');
   if (toast) toast.remove();
@@ -735,4 +781,21 @@ function editMessage(btn) {
     await streamAsk({ custom_question: newText }, thinkingId);
     setCustomBtnLoading(false);
   };
+}
+
+function showLibraryToast(msg) {
+  const existing = document.getElementById('lib-toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.id = 'lib-toast';
+  toast.className = 'fixed top-12 left-1/2 -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-2xl shadow-2xl z-[100] flex items-center gap-3 animate-bounce';
+  toast.innerHTML = `
+    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+    </svg>
+    <span class="font-medium">${msg}</span>
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => { if (toast.parentNode) toast.remove(); }, 4000);
 }

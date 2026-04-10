@@ -249,14 +249,21 @@ async function streamAsk(body, thinkingId) {
         try { event = JSON.parse(line.slice(6)); } catch { continue; }
 
         if (event.type === 'start') {
-          removeThinkingMessage(thinkingId);
-          msgId = createStreamingBubble();
+          // Wait for first token to create the text box
 
-        } else if (event.type === 'token' && msgId) {
+        } else if (event.type === 'token') {
+          if (!msgId) {
+            removeThinkingMessage(thinkingId);
+            msgId = createStreamingBubble(event.warnings);
+          }
           fullText += event.text;
           updateStreamingBubble(msgId, fullText);
 
-        } else if (event.type === 'done' && msgId) {
+        } else if (event.type === 'done') {
+          if (!msgId) {
+            removeThinkingMessage(thinkingId);
+            msgId = createStreamingBubble();
+          }
           finalizeStreamingBubble(msgId, fullText);
 
         } else if (event.type === 'error') {
@@ -277,12 +284,16 @@ async function streamAsk(body, thinkingId) {
 function addUserMessage(text) {
   showChat();
   appendToChat(`
-    <div class="flex justify-end message-in">
+    <div class="flex justify-end message-in group">
       <div class="max-w-[75%]">
-        <div class="bg-brand-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm leading-relaxed shadow-sm">
+        <div class="bg-brand-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm leading-relaxed shadow-sm message-content">
           ${escapeHtml(text)}
         </div>
-        <div class="text-xs text-gray-400 mt-1.5 text-right pr-1">${formatTime()}</div>
+        <div class="flex items-center justify-end mt-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onclick="copyMessage(this)" class="p-1 text-gray-400 hover:text-gray-600 rounded" title="Copy">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+          </button>
+        </div>
       </div>
     </div>
   `);
@@ -293,12 +304,10 @@ function addThinkingMessage() {
   state.isThinking = true;
   const id = `thinking-${Date.now()}`;
   appendToChat(`
-    <div class="flex gap-3 message-in" id="${id}">
-      <div class="ai-avatar flex-shrink-0">AI</div>
-      <div class="mt-1">
-        <div class="text-xs font-semibold text-gray-400 mb-2">AI Advisory</div>
-        <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-5 py-4 shadow-sm inline-block">
-          <div class="thinking-dots"><span></span><span></span><span></span></div>
+    <div class="flex message-in" id="${id}">
+      <div class="flex-1 min-w-0 mt-2">
+        <div class="px-2">
+          <span class="gpt-dot"></span>
         </div>
       </div>
     </div>
@@ -314,7 +323,6 @@ function removeThinkingMessage(id) {
 
 function addAssistantMessage(data) {
   showChat();
-  const time = formatTime();
 
   const warningsHTML = (data.calibration_warnings || []).map(w => `
     <div class="flex gap-2 text-xs bg-blue-50 border border-blue-100 text-blue-700 rounded-xl px-3 py-2.5 mb-3 leading-relaxed">
@@ -326,37 +334,46 @@ function addAssistantMessage(data) {
   `).join('');
 
   appendToChat(`
-    <div class="flex gap-3 message-in">
-      <div class="ai-avatar flex-shrink-0">AI</div>
+    <div class="flex message-in group">
       <div class="flex-1 min-w-0">
-        <div class="flex items-center mb-2.5">
-          <span class="text-xs font-semibold text-gray-400">AI Advisory</span>
-          <span class="text-xs text-gray-400 ml-auto">${time}</span>
-        </div>
         ${warningsHTML}
-        <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-5 py-4 shadow-sm prose-response">
+        <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-5 py-4 shadow-sm prose-response message-content">
           ${formatResponse(data.response)}
+        </div>
+        <div class="flex items-center justify-start mt-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onclick="copyMessage(this)" class="p-1 text-gray-400 hover:text-gray-600 rounded" title="Copy">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+          </button>
         </div>
       </div>
     </div>
   `);
 }
 
-function createStreamingBubble() {
+function createStreamingBubble(warnings = []) {
   showChat();
   const id = `msg-${Date.now()}`;
-  const time = formatTime();
+
+  const warningsHTML = (warnings || []).map(w => `
+    <div class="flex gap-2 text-xs bg-blue-50 border border-blue-100 text-blue-700 rounded-xl px-3 py-2.5 mb-3 leading-relaxed">
+      <svg class="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+      </svg>
+      <span>${escapeHtml(w)}</span>
+    </div>
+  `).join('');
 
   appendToChat(`
-    <div class="flex gap-3 message-in" id="${id}">
-      <div class="ai-avatar flex-shrink-0">AI</div>
+    <div class="flex message-in group" id="${id}">
       <div class="flex-1 min-w-0">
-        <div class="flex items-center mb-2.5">
-          <span class="text-xs font-semibold text-gray-400">AI Advisory</span>
-          <span class="text-xs text-gray-400 ml-auto">${time}</span>
-        </div>
-        <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-5 py-4 shadow-sm prose-response" id="${id}-body">
+        ${warningsHTML}
+        <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-5 py-4 shadow-sm prose-response message-content" id="${id}-body">
           <span id="${id}-text" class="streaming-text"></span>
+        </div>
+        <div class="flex items-center justify-start mt-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onclick="copyMessage(this)" class="p-1 text-gray-400 hover:text-gray-600 rounded" title="Copy">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+          </button>
         </div>
       </div>
     </div>
@@ -367,7 +384,7 @@ function createStreamingBubble() {
 
 function updateStreamingBubble(id, fullText) {
   const body = document.getElementById(`${id}-body`);
-  if (body) body.innerHTML = formatResponse(fullText);
+  if (body) body.innerHTML = formatResponse(fullText) + '<span class="gpt-dot-inline"></span>';
   scrollToBottom();
 }
 
@@ -622,7 +639,7 @@ function showQuoteError(msg) {
 
 function setLoadingBtn(loading) {
   $('load-btn').disabled = loading;
-  setText('load-btn-text', loading ? '…' : 'Load');
+  setText('load-btn-text', loading ? 'Loading' : 'Load');
   loading ? showEl('load-spinner') : hideEl('load-spinner');
 }
 
@@ -636,4 +653,21 @@ function shakeQuoteInput() {
   const el = $('quote-input');
   el.classList.add('shake');
   setTimeout(() => el.classList.remove('shake'), 500);
+}
+
+async function copyMessage(btn) {
+  try {
+    const bubble = btn.closest('.message-in').querySelector('.message-content');
+    const text = bubble ? bubble.innerText : '';
+    await navigator.clipboard.writeText(text);
+
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = `<svg class="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
+
+    setTimeout(() => {
+      btn.innerHTML = originalHTML;
+    }, 2000);
+  } catch (err) {
+    console.error('Failed to copy', err);
+  }
 }
